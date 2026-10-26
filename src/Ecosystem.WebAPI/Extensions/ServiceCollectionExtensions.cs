@@ -41,8 +41,9 @@ public static class ServiceCollectionExtensions
         // Dịch vụ quản lý sinh viên thực hành Buổi 1
         services.AddSingleton<IStudentManager, StudentManager>();
 
-        // Dịch vụ Cây Tri Thức cho The Ecosystem
+        // Dịch vụ Cây Tri Thức cho The Ecosystem (Overview & Full CRUD)
         services.AddScoped<ITaxonomyOverviewService, TaxonomyOverviewService>();
+        services.AddSingleton<ITaxonomyService, TaxonomyService>();
 
         return services;
     }

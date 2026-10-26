@@ -29,7 +29,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 02: Web API Pipeline & Native Dependency Injection",
+    phase = "Phase 03: Controllers & RESTful Routing (Taxonomy CRUD)",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")));
