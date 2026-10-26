@@ -26,3 +26,7 @@ bld/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Documentation & Reference Docs (do not push to git)
+reference-docs/
+docs/
