@@ -20,6 +20,8 @@ Mọi hành động và chu kỳ làm việc của Agent PHẢI tuân thủ 5 ng
 
 ### 🔴 Quy Tắc 1: Push Git Sau Mỗi Lần Cập Nhật Mã Nguồn (Mandatory Git Push)
 - **Yêu cầu:** Sau mỗi lần thêm mới tính năng, sửa lỗi, tái cấu trúc hoặc hoàn thành một tác vụ cập nhật mã nguồn (và sau khi đã biên dịch `dotnet build` thành công), Agent **PHẢI thực hiện commit và push ngay lập tức lên remote Git** (`git push origin main` hoặc nhánh làm việc tương ứng).
+- **CHỈ ĐỊNH BẮT BUỘC VỀ PHẠM VI GIT PUSH:**
+  - **TUYỆT ĐỐI KHÔNG PUSH `reference-docs/` và `docs/`:** Hai thư mục này được lưu cục bộ và đã được đưa vào `.gitignore`. Mọi thao tác `git add` và `git push` chỉ áp dụng cho mã nguồn dự án (.NET C# source code, .csproj, Program.cs, AGENT.md, README.md, .gitignore, cấu hình build/test).
 - **Tuyệt đối không:** Tích tụ nhiều thay đổi mã nguồn cục bộ mà không đẩy lên remote; không để trạng thái git dở dang khi kết thúc lượt phản hồi.
 - **Chuẩn commit:** Sử dụng Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`).
 
@@ -27,7 +29,7 @@ Mọi hành động và chu kỳ làm việc của Agent PHẢI tuân thủ 5 ng
 - **Yêu cầu:** Sau khi hoàn thành việc triển khai mã nguồn của bất kỳ phase nào, Agent **PHẢI lập biên bản nghiệm thu kỹ thuật chính thức** và lưu tại:
   `reference-docs/plan/PHASE-XX-ACCEPTANCE.md` (theo mẫu chuẩn tại [`reference-docs/plan/PHASE_ACCEPTANCE_TEMPLATE.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/PHASE_ACCEPTANCE_TEMPLATE.md)).
 - **Nội dung nghiệm thu:** Rà soát checklist tiêu chí của bài học, ghi nhận kết quả biên dịch (`dotnet build`), kết quả unit test (`dotnet test`), danh mục API bàn giao, bằng chứng kiểm thử thực tế và mã Git Commit SHA.
-- Đồng thời cập nhật trạng thái tiến độ trong [`reference-docs/plan/MASTER_PLAN_15_PHASES.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/MASTER_PLAN_15_PHASES.md).
+- Đồng thời cập nhật trạng thái tiến độ trong [`reference-docs/plan/MASTER_PLAN_15_PHASES.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/MASTER_PLAN_15_PHASES.md). Lưu ý: tài liệu này lưu cục bộ tại `reference-docs/plan/`, không push lên Git.
 
 ### 🔴 Quy Tắc 3: Dự Án Chia Làm 15 Phase Nền Tảng Theo Slide Bài Giảng
 - **Cấu trúc:** Dự án được chia làm **15 Phase nền tảng** tương ứng chính xác với 15 buổi học trong giáo trình `acad_net-core-slide` (từ Buổi 01 đến Buổi 15).
@@ -48,6 +50,19 @@ Mọi hành động và chu kỳ làm việc của Agent PHẢI tuân thủ 5 ng
 ### 🔴 Quy Tắc 5: Trọng Tâm Tuyệt Đối Vào Backend
 - **Phạm vi cốt lõi:** Hệ thống tập trung toàn bộ nguồn lực vào thiết kế và xây dựng **Backend** (.NET 8 Web API, Entity Framework Core, SignalR Hubs, Background Services, Logging, Data Security, Testing).
 - **Giao diện Frontend:** **Chỉ thực hiện khi có yêu cầu cụ thể bằng văn bản từ người dùng.** Không tự ý tạo các trang UI phức tạp khi chưa được giao nhiệm vụ.
+
+### 🔴 Quy Tắc 6: Nguyên Tắc Tra Cứu `reference-docs/core`
+- **Khối lượng tài liệu:** Thư mục `reference-docs/core` chứa khối lượng tài liệu rất đồ sộ từ Microsoft (.NET Extensions, Dependency Injection, Configuration, Logging, Workers, Channels...).
+- **Chỉ thị bắt buộc:** **CHỈ thực hiện tra cứu khi cần thiết và đọc CHÍNH XÁC tài liệu trong vấn đề cụ thể.** Tuyệt đối **KHÔNG đọc hết** hoặc quét đồng loạt toàn bộ tài liệu trong thư mục này để tránh lãng phí context và quá tải thông tin.
+
+### 🔴 Quy Tắc 7: Môi Trường Hệ Điều Hành Của Người Dùng (`reference-docs/os.md`)
+- **Đặc tả môi trường:** Hệ điều hành của người dùng được ghi nhận tại [`reference-docs/os.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/os.md):
+  - **OS:** Debian GNU/Linux 13 (trixie) x86_64
+  - **Kernel:** Linux 6.12.111+deb13-amd64
+  - **Shell:** bash 5.2.37 | **Terminal:** xfce4-terminal 1.1.4
+  - **Desktop Environment:** Xfce4 4.20 | **Window Manager:** Xfwm4 (X11)
+  - **Locale:** en_US.UTF-8
+- **Yêu cầu thực thi:** Mọi lệnh shell, script tự động, đường dẫn tệp tin, công cụ CLI và thiết lập môi trường phải tương thích hoàn toàn với nền tảng Debian Linux x86_64 này.
 
 ---
 
@@ -110,3 +125,26 @@ flowchart TD
 - [Đặc tả RESTful API & SignalR Hubs](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/docs/architecture/api-and-realtime.md)
 - [Tiêu chuẩn Kỹ thuật Mã nguồn & Kiểm thử](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/docs/standards/engineering-standards.md)
 - [Kế hoạch Tổng thể 15 Phase Nền Tảng](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/MASTER_PLAN_15_PHASES.md)
+
+---
+
+## 6. Điều Kiện Sẵn Sàng Triển Khai Phase 01 (Phase 01 Readiness)
+
+Phase 01 (**Solution Setup & Domain Entities** - tương ứng Buổi 1 giáo trình) đạt trạng thái **HOÀN TOÀN KHẢ THI** để triển khai ngay khi có lệnh, nhờ các điều kiện tiên quyết đã được chuẩn bị đầy đủ:
+
+1. **Môi trường & Công cụ:**
+   - .NET 8 SDK (`8.0.426`) đã sẵn sàng trên Debian GNU/Linux 13.
+   - Trình biên dịch CLI `dotnet` hoạt động chính xác.
+2. **Kỷ luật Git & Phạm vi Kho lưu trữ:**
+   - `.gitignore` đã loại trừ toàn bộ `bin/`, `obj/`, `reference-docs/`, `docs/`.
+   - Git working tree sạch sẽ, remote `origin/main` đồng bộ hoàn toàn.
+3. **Bộ Quy chuẩn & Mẫu Tài liệu Nghiệm thu:**
+   - Checklist chi tiết đã sẵn sàng tại [`reference-docs/plan/MASTER_PLAN_15_PHASES.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/MASTER_PLAN_15_PHASES.md).
+   - Biểu mẫu nghiệm thu đã chuẩn hóa tại [`reference-docs/plan/PHASE_ACCEPTANCE_TEMPLATE.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan/PHASE_ACCEPTANCE_TEMPLATE.md).
+   - Biểu mẫu kiểm thử cho dev đã chuẩn hóa tại [`reference-docs/guides/TEST_GUIDE_TEMPLATE.md`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/guides/TEST_GUIDE_TEMPLATE.md).
+4. **Hành động cụ thể khi kích hoạt Phase 01:**
+   - Tạo Solution `TheEcosystem.sln` và phân chia 5 projects theo Clean Architecture (`Domain`, `Application`, `Infrastructure`, `WebAPI`, `UnitTests`).
+   - Xây dựng thực thể miền `BaseEntity`, `Topic`, `Aspect`, `Category`, `Article`, `User`, `ClassroomSession`, và Enums.
+   - Xác thực `dotnet build` đạt 0 Error, 0 Warning.
+   - Lập tài liệu `PHASE-01-TEST-GUIDE.md` và `PHASE-01-ACCEPTANCE.md`.
+   - Commit và push mã nguồn lên Git.
