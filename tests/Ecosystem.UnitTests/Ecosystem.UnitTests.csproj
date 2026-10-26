@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ecosystem.Application\Ecosystem.Application.csproj" />
     <ProjectReference Include="..\..\src\Ecosystem.Domain\Ecosystem.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Ecosystem.WebAPI\Ecosystem.WebAPI.csproj" />
   </ItemGroup>
 
 </Project>
