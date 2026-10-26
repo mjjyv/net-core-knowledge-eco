@@ -1,0 +1,6 @@
+@Ecosystem.WebAPI_HostAddress = http://localhost:5086
+
+GET {{Ecosystem.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ecosystem.Infrastructure\Ecosystem.Infrastructure.csproj" />
+    <ProjectReference Include="..\Ecosystem.Application\Ecosystem.Application.csproj" />
+    <ProjectReference Include="..\Ecosystem.Domain\Ecosystem.Domain.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
