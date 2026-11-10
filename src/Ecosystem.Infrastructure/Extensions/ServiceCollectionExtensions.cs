@@ -1,4 +1,6 @@
+using Ecosystem.Application.Interfaces;
 using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Đăng ký ApplicationDbContext với cơ chế đa nhà cung cấp cơ sở dữ liệu (SQLite mặc định, SQL Server).
     /// Vòng đời đăng ký là Scoped theo chuẩn Best Practice của Web API.
+    /// Đồng thời đăng ký dịch vụ quản trị dữ liệu bài viết IArticleService.
     /// </summary>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
@@ -33,6 +36,9 @@ public static class ServiceCollectionExtensions
                     break;
             }
         });
+
+        // Đăng ký dịch vụ thao tác dữ liệu bài viết (Scoped theo DbContext)
+        services.AddScoped<IArticleService, ArticleService>();
 
         return services;
     }

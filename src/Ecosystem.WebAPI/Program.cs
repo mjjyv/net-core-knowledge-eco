@@ -48,7 +48,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 05: EF Core: DbContext, Connection String & Migrations",
+    phase = "Phase 06: CRUD Bài Viết, LINQ & Quan Hệ Dữ Liệu",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")));
