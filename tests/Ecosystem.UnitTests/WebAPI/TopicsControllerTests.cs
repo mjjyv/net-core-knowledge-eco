@@ -1,7 +1,7 @@
+using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Models;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
-using Ecosystem.Domain.Entities;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +29,7 @@ public class TopicsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<Topic>>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<TopicResponseDto>>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.NotNull(apiResponse.Data);
         Assert.NotEmpty(apiResponse.Data);
@@ -46,7 +46,7 @@ public class TopicsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<Topic>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<TopicDetailResponseDto>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal(topicId, apiResponse.Data?.Id);
     }
@@ -62,7 +62,7 @@ public class TopicsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<Topic>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<TopicResponseDto>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal(slug, apiResponse.Data?.Slug);
     }
@@ -71,7 +71,7 @@ public class TopicsControllerTests
     public async Task Create_WhenValid_ReturnsCreatedAtActionResult_With201Status()
     {
         // Arrange
-        var request = new CreateTopicRequest
+        var request = new TopicCreateDto
         {
             Title = "Kiến Trúc Microservices",
             Description = "Phân tán và Docker hóa hệ thống",
@@ -86,7 +86,7 @@ public class TopicsControllerTests
         Assert.Equal(201, createdResult.StatusCode);
         Assert.Equal(nameof(TopicsController.GetById), createdResult.ActionName);
 
-        var apiResponse = Assert.IsType<ApiResponse<Topic>>(createdResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<TopicResponseDto>>(createdResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal("kien-truc-microservices", apiResponse.Data?.Slug);
     }
@@ -97,7 +97,7 @@ public class TopicsControllerTests
         // Arrange
         var routeId = Guid.NewGuid();
         var bodyId = Guid.NewGuid(); // Mismatched
-        var request = new UpdateTopicRequest
+        var request = new TopicUpdateDto
         {
             Id = bodyId,
             Title = "Cập nhật sai ID"
@@ -116,7 +116,7 @@ public class TopicsControllerTests
     {
         // Arrange
         var topicId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var request = new UpdateTopicRequest
+        var request = new TopicUpdateDto
         {
             Id = topicId,
             Title = "Lập trình C# & ASP.NET Core Đổi Tên",
@@ -154,7 +154,7 @@ public class TopicsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<Aspect>>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<AspectResponseDto>>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.NotEmpty(apiResponse.Data!);
     }
@@ -164,7 +164,7 @@ public class TopicsControllerTests
     {
         // Arrange
         var topicId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var request = new CreateAspectRequest
+        var request = new AspectCreateDto
         {
             Title = "Clean Architecture & DDD",
             Description = "Domain Driven Design mẫu mực",
@@ -180,7 +180,7 @@ public class TopicsControllerTests
         Assert.Equal("Aspects", createdResult.ControllerName);
         Assert.Equal("GetById", createdResult.ActionName);
 
-        var apiResponse = Assert.IsType<ApiResponse<Aspect>>(createdResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<AspectResponseDto>>(createdResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal("clean-architecture-ddd", apiResponse.Data?.Slug);
     }

@@ -1,12 +1,17 @@
 using System.Diagnostics;
+using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
 
+/// <summary>
+/// Controller chẩn đoán hệ thống: kiểm chứng DI Lifetimes, Middleware bắt lỗi và Custom Model Validation (Buổi 2, 4).
+/// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
+[Produces("application/json")]
 public class DiagnosticsController : ControllerBase
 {
     private readonly ITransientService _transient1;
@@ -36,6 +41,7 @@ public class DiagnosticsController : ControllerBase
     /// Minh chứng sự khác biệt của 3 vòng đời Native DI (Transient, Scoped, Singleton) trong cùng một HTTP Request.
     /// </summary>
     [HttpGet("lifetimes")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public IActionResult GetLifetimes()
     {
         var result = new
@@ -70,6 +76,11 @@ public class DiagnosticsController : ControllerBase
     /// Endpoint cố tình phát sinh ngoại lệ để kiểm chứng GlobalExceptionMiddleware chuẩn RFC 7807.
     /// </summary>
     [HttpGet("error-demo")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public IActionResult ThrowErrorDemo([FromQuery] string? type)
     {
         return type?.ToLowerInvariant() switch
@@ -79,5 +90,20 @@ public class DiagnosticsController : ControllerBase
             "unauthorized" => throw new UnauthorizedAccessException("Bạn không có quyền thực thi tác vụ này."),
             _ => throw new InvalidOperationException("Lỗi hệ thống cố tình phát sinh để kiểm chứng Middleware.")
         };
+    }
+
+    /// <summary>
+    /// Kiểm thử Custom Validation Attribute [MustBeEven] (Bài tập 4 - Buổi 4).
+    /// </summary>
+    /// <param name="dto">Đối tượng kiểm thử chứa trường Value bắt buộc phải là số chẵn.</param>
+    /// <returns>Đối tượng đã được xác thực thành công.</returns>
+    /// <response code="200">Xác thực thành công, giá trị là số chẵn.</response>
+    /// <response code="400">Dữ liệu không hợp lệ (giá trị là số lẻ hoặc thiếu thuộc tính).</response>
+    [HttpPost("validate-even")]
+    [ProducesResponseType(typeof(ApiResponse<EvenNumberDemoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public IActionResult ValidateEvenNumber([FromBody] EvenNumberDemoDto dto)
+    {
+        return Ok(ApiResponse<EvenNumberDemoDto>.Ok(dto, $"Giá trị {dto.Value} là số chẵn hợp lệ."));
     }
 }

@@ -1,6 +1,7 @@
+using System.Reflection;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Services;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 
 namespace Ecosystem.WebAPI.Extensions;
 
@@ -10,7 +11,7 @@ namespace Ecosystem.WebAPI.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Đăng ký tài liệu tự động Swagger / OpenAPI.
+    /// Đăng ký tài liệu tự động Swagger / OpenAPI kèm XML Comments chi tiết (Buổi 4).
     /// </summary>
     public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
@@ -21,13 +22,35 @@ public static class ServiceCollectionExtensions
             {
                 Title = "The Ecosystem Web API",
                 Version = "v1",
-                Description = "Hệ sinh thái tri thức và giao tiếp hợp nhất (Unified Knowledge & Communication Ecosystem) - Backend ASP.NET Core .NET 8 C#.",
+                Description = "Hệ sinh thái tri thức và giao tiếp hợp nhất (Unified Knowledge & Communication Ecosystem) - Backend ASP.NET Core .NET 8 C#. Quản lý Cây tri thức phân cấp và Tài khoản người dùng với DTO & Validation chặt chẽ.",
                 Contact = new OpenApiContact
                 {
                     Name = "The Ecosystem Architecture Team",
-                    Email = "architecture@ecosystem.local"
+                    Email = "architecture@ecosystem.vn",
+                    Url = new Uri("https://ecosystem.vn")
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "MIT License",
+                    Url = new Uri("https://opensource.org/licenses/MIT")
                 }
             });
+
+            // 1. Tải XML Comments của WebAPI Assembly
+            var webApiXml = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var webApiPath = Path.Combine(AppContext.BaseDirectory, webApiXml);
+            if (File.Exists(webApiPath))
+            {
+                options.IncludeXmlComments(webApiPath, includeControllerXmlComments: true);
+            }
+
+            // 2. Tải XML Comments của Application Assembly (chứa mô tả DTOs & Custom Validation)
+            var appXml = "Ecosystem.Application.xml";
+            var appPath = Path.Combine(AppContext.BaseDirectory, appXml);
+            if (File.Exists(appPath))
+            {
+                options.IncludeXmlComments(appPath);
+            }
         });
 
         return services;
@@ -44,6 +67,9 @@ public static class ServiceCollectionExtensions
         // Dịch vụ Cây Tri Thức cho The Ecosystem (Overview & Full CRUD)
         services.AddScoped<ITaxonomyOverviewService, TaxonomyOverviewService>();
         services.AddSingleton<ITaxonomyService, TaxonomyService>();
+
+        // Dịch vụ Quản lý & Đăng ký Người dùng (Lab Buổi 4)
+        services.AddSingleton<IUserService, UserService>();
 
         return services;
     }

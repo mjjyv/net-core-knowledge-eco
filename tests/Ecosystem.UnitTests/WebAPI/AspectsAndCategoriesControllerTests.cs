@@ -1,7 +1,7 @@
+using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Models;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
-using Ecosystem.Domain.Entities;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,7 +31,7 @@ public class AspectsAndCategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<Aspect>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<AspectDetailResponseDto>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal(aspectId, apiResponse.Data?.Id);
     }
@@ -42,7 +42,7 @@ public class AspectsAndCategoriesControllerTests
         // Arrange
         var routeId = Guid.NewGuid();
         var bodyId = Guid.NewGuid();
-        var request = new UpdateAspectRequest { Id = bodyId, Title = "Aspect sai ID" };
+        var request = new AspectUpdateDto { Id = bodyId, Title = "Aspect sai ID" };
 
         // Act
         var result = await _aspectsController.Update(routeId, request);
@@ -57,7 +57,7 @@ public class AspectsAndCategoriesControllerTests
     {
         // Arrange
         var aspectId = Guid.Parse("11111111-aaaa-1111-1111-111111111111");
-        var request = new UpdateAspectRequest
+        var request = new AspectUpdateDto
         {
             Id = aspectId,
             Title = "Nền tảng C# Mới Nhất",
@@ -95,7 +95,7 @@ public class AspectsAndCategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<Category>>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<IEnumerable<CategoryResponseDto>>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.NotEmpty(apiResponse.Data!);
     }
@@ -105,7 +105,7 @@ public class AspectsAndCategoriesControllerTests
     {
         // Arrange
         var aspectId = Guid.Parse("11111111-aaaa-1111-1111-111111111111");
-        var request = new CreateCategoryRequest
+        var request = new CategoryCreateDto
         {
             Title = "Span<T> and Memory<T> Performance",
             Description = "Tối ưu bộ nhớ đệm",
@@ -121,7 +121,7 @@ public class AspectsAndCategoriesControllerTests
         Assert.Equal("Categories", createdResult.ControllerName);
         Assert.Equal("GetById", createdResult.ActionName);
 
-        var apiResponse = Assert.IsType<ApiResponse<Category>>(createdResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<CategoryResponseDto>>(createdResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal("spant-and-memoryt-performance", apiResponse.Data?.Slug);
     }
@@ -137,7 +137,7 @@ public class AspectsAndCategoriesControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var apiResponse = Assert.IsType<ApiResponse<Category>>(okResult.Value);
+        var apiResponse = Assert.IsType<ApiResponse<CategoryResponseDto>>(okResult.Value);
         Assert.True(apiResponse.Success);
         Assert.Equal(catId, apiResponse.Data?.Id);
     }
@@ -148,7 +148,7 @@ public class AspectsAndCategoriesControllerTests
         // Arrange
         var routeId = Guid.NewGuid();
         var bodyId = Guid.NewGuid();
-        var request = new UpdateCategoryRequest { Id = bodyId, Title = "Category sai ID" };
+        var request = new CategoryUpdateDto { Id = bodyId, Title = "Category sai ID" };
 
         // Act
         var result = await _categoriesController.Update(routeId, request);
@@ -163,7 +163,7 @@ public class AspectsAndCategoriesControllerTests
     {
         // Arrange
         var catId = Guid.Parse("11111111-aaaa-c111-1111-111111111111");
-        var request = new UpdateCategoryRequest
+        var request = new CategoryUpdateDto
         {
             Id = catId,
             Title = "OOP Căn Bản và Nâng Cao",

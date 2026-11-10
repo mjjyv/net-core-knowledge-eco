@@ -1,72 +1,47 @@
+using Ecosystem.Application.DTOs;
+
 namespace Ecosystem.Application.Models;
 
 /// <summary>
-/// Dữ liệu đầu vào khi tạo mới một Topic.
+/// Dữ liệu đầu vào khi tạo mới một Topic (Kế thừa TopicCreateDto có đầy đủ Data Annotations).
 /// </summary>
-public class CreateTopicRequest
+public class CreateTopicRequest : TopicCreateDto
 {
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>
-/// Dữ liệu đầu vào khi cập nhật một Topic.
+/// Dữ liệu đầu vào khi cập nhật một Topic (Kế thừa TopicUpdateDto có đầy đủ Data Annotations).
 /// </summary>
-public class UpdateTopicRequest
+public class UpdateTopicRequest : TopicUpdateDto
 {
-    public Guid Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>
-/// Dữ liệu đầu vào khi tạo mới một Aspect trực thuộc Topic.
+/// Dữ liệu đầu vào khi tạo mới một Aspect (Kế thừa AspectCreateDto có đầy đủ Data Annotations).
 /// </summary>
-public class CreateAspectRequest
+public class CreateAspectRequest : AspectCreateDto
 {
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>
-/// Dữ liệu đầu vào khi cập nhật một Aspect.
+/// Dữ liệu đầu vào khi cập nhật một Aspect (Kế thừa AspectUpdateDto có đầy đủ Data Annotations).
 /// </summary>
-public class UpdateAspectRequest
+public class UpdateAspectRequest : AspectUpdateDto
 {
-    public Guid Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>
-/// Dữ liệu đầu vào khi tạo mới một Category trực thuộc Aspect.
+/// Dữ liệu đầu vào khi tạo mới một Category (Kế thừa CategoryCreateDto có đầy đủ Data Annotations).
 /// </summary>
-public class CreateCategoryRequest
+public class CreateCategoryRequest : CategoryCreateDto
 {
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>
-/// Dữ liệu đầu vào khi cập nhật một Category.
+/// Dữ liệu đầu vào khi cập nhật một Category (Kế thừa CategoryUpdateDto có đầy đủ Data Annotations).
 /// </summary>
-public class UpdateCategoryRequest
+public class UpdateCategoryRequest : CategoryUpdateDto
 {
-    public Guid Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Slug { get; set; }
-    public string? Description { get; set; }
-    public int OrderIndex { get; set; } = 0;
 }
 
 /// <summary>

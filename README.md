@@ -42,10 +42,10 @@ Dự án được phân rã thành **15 Phase nền tảng**, bám sát và hi�
 
 | Phase | Bài giảng tương ứng | Tên Phase & Trọng tâm Kỹ thuật | Trạng thái | Nghiệm thu (`plan/`) | Hướng dẫn Dev (`guides/`) |
 |:---:|:---:|---|:---:|:---:|:---:|
-| **01** | Buổi 01 | Solution Setup & Domain Entities | 📝 Ready | [`PHASE-01-ACCEPTANCE`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/plan) | [`PHASE-01-TEST-GUIDE`](file:///home/debv/Documents/life_it_antigravity/acad_net-core/theEcosystem/reference-docs/guides) |
-| **02** | Buổi 02 | Web API Pipeline & Native DI Lifetimes | ⏳ Pending | `PHASE-02-ACCEPTANCE` | `PHASE-02-TEST-GUIDE` |
-| **03** | Buổi 03 | Controllers & RESTful Routing (Taxonomy) | ⏳ Pending | `PHASE-03-ACCEPTANCE` | `PHASE-03-TEST-GUIDE` |
-| **04** | Buổi 04 | DTOs, Model Validation & Swagger UI | ⏳ Pending | `PHASE-04-ACCEPTANCE` | `PHASE-04-TEST-GUIDE` |
+| **01** | Buổi 01 | Solution Setup & Domain Entities | ✅ Completed | [`PHASE-01-ACCEPTANCE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/plan/PHASE-01-ACCEPTANCE.md) | [`PHASE-01-TEST-GUIDE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/guides/PHASE-01-TEST-GUIDE.md) |
+| **02** | Buổi 02 | Web API Pipeline & Native DI Lifetimes | ✅ Completed | [`PHASE-02-ACCEPTANCE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/plan/PHASE-02-ACCEPTANCE.md) | [`PHASE-02-TEST-GUIDE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/guides/PHASE-02-TEST-GUIDE.md) |
+| **03** | Buổi 03 | Controllers & RESTful Routing (Taxonomy) | ✅ Completed | [`PHASE-03-ACCEPTANCE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/plan/PHASE-03-ACCEPTANCE.md) | [`PHASE-03-TEST-GUIDE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/guides/PHASE-03-TEST-GUIDE.md) |
+| **04** | Buổi 04 | DTOs, Model Validation & Swagger UI | ✅ Completed | [`PHASE-04-ACCEPTANCE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/plan/PHASE-04-ACCEPTANCE.md) | [`PHASE-04-TEST-GUIDE`](file:///home/debv/Documents/100_academy/acad_it_net-core/acad_net-core-project/theEcosystem/reference-docs/guides/PHASE-04-TEST-GUIDE.md) |
 | **05** | Buổi 05 | EF Core: DbContext, Connection & Migrations | ⏳ Pending | `PHASE-05-ACCEPTANCE` | `PHASE-05-TEST-GUIDE` |
 | **06** | Buổi 06 | CRUD Bài Viết, LINQ & Quan Hệ Dữ Liệu | ⏳ Pending | `PHASE-06-ACCEPTANCE` | `PHASE-06-TEST-GUIDE` |
 | **07** | Buổi 07 | N-Tier Architecture, Repository & Unit of Work | ⏳ Pending | `PHASE-07-ACCEPTANCE` | `PHASE-07-TEST-GUIDE` |
