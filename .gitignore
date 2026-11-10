@@ -27,6 +27,11 @@ bld/
 .DS_Store
 Thumbs.db
 
+# SQLite local databases
+*.db
+*.db-shm
+*.db-wal
+
 # Documentation & Reference Docs (do not push to git)
 reference-docs/
 docs/

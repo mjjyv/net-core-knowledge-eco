@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ecosystem.Application\Ecosystem.Application.csproj" />
     <ProjectReference Include="..\..\src\Ecosystem.Domain\Ecosystem.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Ecosystem.Infrastructure\Ecosystem.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Ecosystem.WebAPI\Ecosystem.WebAPI.csproj" />
   </ItemGroup>
 
