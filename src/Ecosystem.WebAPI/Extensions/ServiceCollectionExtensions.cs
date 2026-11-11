@@ -8,6 +8,7 @@ using Ecosystem.Application.Services;
 using Ecosystem.WebAPI.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -253,6 +254,31 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ITransientService, LifetimeService>();
         services.AddScoped<IScopedService, LifetimeService>();
         services.AddSingleton<ISingletonService, LifetimeService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký các lớp cấu hình Strongly-Typed theo Options Pattern với ValidateDataAnnotations().ValidateOnStart() (Buổi 10).
+    /// </summary>
+    public static IServiceCollection AddConfigurationAndOptions(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddOptions<FileStorageOptions>()
+            .Bind(configuration.GetSection(FileStorageOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<EcosystemFeaturesOptions>()
+            .Bind(configuration.GetSection(EcosystemFeaturesOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 20 * 1024 * 1024;
+        });
 
         return services;
     }

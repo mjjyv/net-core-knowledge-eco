@@ -32,6 +32,10 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
+# Uploaded runtime files
+wwwroot/uploads/
+uploads/
+
 # Documentation & Reference Docs (do not push to git)
 reference-docs/
 docs/

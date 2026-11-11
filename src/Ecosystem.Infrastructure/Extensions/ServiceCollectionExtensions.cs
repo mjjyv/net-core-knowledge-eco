@@ -1,6 +1,7 @@
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Interfaces;
 using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Files;
 using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.Infrastructure.Security;
 using Ecosystem.Infrastructure.Services;
@@ -55,6 +56,9 @@ public static class ServiceCollectionExtensions
 
         // Đăng ký dịch vụ chẩn đoán DB cho tầng WebAPI
         services.AddScoped<IDatabaseDiagnosticsService, DatabaseDiagnosticsService>();
+
+        // Đăng ký dịch vụ lưu trữ tệp đính kèm (Scoped để đồng bộ IOptionsSnapshot hot-reload)
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         return services;
     }

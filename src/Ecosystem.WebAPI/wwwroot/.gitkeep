@@ -1,0 +1,1 @@
+# Preserves wwwroot folder so WebHostEnvironment.WebRootPath is active for app.UseStaticFiles()

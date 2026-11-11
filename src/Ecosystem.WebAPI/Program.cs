@@ -1,14 +1,17 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Domain.Common;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
 using Ecosystem.Infrastructure.Extensions;
 using Ecosystem.WebAPI.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Đăng ký Services vào DI Container
+// 1. Đăng ký Services & Options Pattern vào DI Container
 builder.Services.AddControllers();
+builder.Services.AddConfigurationAndOptions(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddApplicationServices();
 builder.Services.AddLifetimeDemonstrationServices();
@@ -17,13 +20,22 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
+var features = app.Services.GetRequiredService<IOptions<EcosystemFeaturesOptions>>().Value;
+
 // 2. Cấu hình HTTP Request Pipeline (Middleware Architecture)
 app.UseCustomMiddlewares();
 
-if (app.Environment.IsDevelopment())
+// Đảm bảo thư mục wwwroot tồn tại và kích hoạt phục vụ tệp tĩnh (Buổi 10)
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot"));
+app.UseStaticFiles();
+
+if (app.Environment.IsDevelopment() && features.EnableSwagger)
 {
     app.UseSwaggerDocumentation();
+}
 
+if (app.Environment.IsDevelopment() || features.EnableAutoMigration)
+{
     // Tự động áp dụng Migrations và Seed Data ban đầu (Bài tập 4 & 5 - Buổi 5)
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -53,7 +65,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 09: Authorization: Roles, Claims & Policies",
+    phase = "Phase 10: File Upload, Configuration & Options Pattern",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")))
