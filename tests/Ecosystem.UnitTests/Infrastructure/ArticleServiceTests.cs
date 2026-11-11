@@ -180,8 +180,8 @@ public class ArticleServiceTests : IDisposable
 
         // Act: Filter by Status = Published
         var published = (await service.GetAllAsync(new ArticleFilterQuery { Status = ArticleStatus.Published })).ToList();
-        Assert.Single(published);
-        Assert.Equal(SeededArticleId, published[0].Id);
+        Assert.Equal(2, published.Count);
+        Assert.Contains(published, a => a.Id == SeededArticleId);
     }
 
     [Fact]

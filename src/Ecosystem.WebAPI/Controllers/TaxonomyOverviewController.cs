@@ -1,10 +1,12 @@
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/v1/taxonomy")]
 public class TaxonomyOverviewController : ControllerBase
 {

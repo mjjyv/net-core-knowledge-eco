@@ -202,11 +202,13 @@ public class ApplicationDbContextTests : IDisposable
 
             // Assert 1
             Assert.True(await context.Users.AnyAsync(u => u.Email == "admin@ecosystem.vn"));
+            Assert.True(await context.Users.AnyAsync(u => u.Email == "presenter@ecosystem.vn"));
             Assert.True(await context.Users.AnyAsync(u => u.Email == "user@ecosystem.vn"));
             Assert.True(await context.Topics.AnyAsync(t => t.Slug == "lap-trinh-dotnet-aspnet-core"));
             Assert.True(await context.Aspects.AnyAsync(a => a.Slug == "kien-truc-backend-csharp"));
             Assert.True(await context.Categories.AnyAsync(c => c.Slug == "clean-architecture-cqrs"));
             Assert.True(await context.Articles.AnyAsync(art => art.Slug == "huong-dan-thiet-ke-solution-chuan-clean-architecture-trong-net-8"));
+            Assert.True(await context.Articles.AnyAsync(art => art.Slug == "huong-dan-ef-core-linq-va-n-tier-architecture"));
             Assert.True(await context.Students.AnyAsync());
 
             // Act 2: Idempotent Seed (call again should not throw or duplicate)
@@ -215,7 +217,7 @@ public class ApplicationDbContextTests : IDisposable
             // Assert 2
             var userCount = await context.Users.CountAsync();
             var topicCount = await context.Topics.CountAsync();
-            Assert.Equal(2, userCount);
+            Assert.Equal(3, userCount);
             Assert.Equal(2, topicCount);
         }
     }

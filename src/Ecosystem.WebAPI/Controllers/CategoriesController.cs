@@ -1,8 +1,10 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappers;
 using Ecosystem.Application.Models;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
@@ -35,6 +37,7 @@ public class CategoriesController : ControllerBase
     /// <response code="200">Tìm thấy Chuyên mục thành công.</response>
     /// <response code="404">Không tìm thấy Chuyên mục với Id tương ứng.</response>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<CategoryResponseDto>>> GetById([FromRoute] Guid id)
@@ -52,6 +55,7 @@ public class CategoriesController : ControllerBase
     /// <response code="400">ID trên route không khớp ID body hoặc dữ liệu vi phạm validation.</response>
     /// <response code="404">Không tìm thấy Chuyên mục cần cập nhật.</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -91,6 +95,7 @@ public class CategoriesController : ControllerBase
     /// <response code="200">Lấy danh sách bài viết thành công.</response>
     /// <response code="404">Không tìm thấy Chuyên mục tương ứng.</response>
     [HttpGet("{id:guid}/articles")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<ArticleResponseDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<IEnumerable<ArticleResponseDto>>>> GetArticlesByCategoryId(
@@ -128,6 +133,7 @@ public class CategoriesController : ControllerBase
     /// <response code="204">Xóa thành công, không trả về body.</response>
     /// <response code="404">Không tìm thấy Chuyên mục cần xóa.</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute] Guid id)

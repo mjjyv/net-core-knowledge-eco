@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
@@ -143,6 +144,60 @@ public class AuthController : ControllerBase
         }
 
         return Ok(ApiResponse<UserResponseDto>.Ok(user, "Xác thực danh tính JWT thành công."));
+    }
+
+    /// <summary>
+    /// Trích xuất toàn bộ JWT Claims, Roles và Department của người dùng hiện tại (Bài tập 4 - Buổi 9: WhoAmI).
+    /// </summary>
+    [HttpGet("claims")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public IActionResult GetMyClaims()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        var username = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var department = User.FindFirstValue(AuthConstants.Claims.Department);
+        var dateOfBirth = User.FindFirstValue(ClaimTypes.DateOfBirth);
+        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList();
+
+        var payload = new
+        {
+            userId,
+            username,
+            email,
+            department,
+            dateOfBirth,
+            roles,
+            greeting = $"Xin chào {username ?? "Thành viên"} (Vai trò: {string.Join(", ", roles)})!",
+            claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+        };
+
+        return Ok(ApiResponse<object>.Ok(payload, "Trích xuất danh sách JWT Claims thành công."));
+    }
+
+    /// <summary>
+    /// Kiểm chứng Custom Authorization Policy dựa trên độ tuổi tối thiểu (>= 18) từ DateOfBirth Claim (Bài tập 5 - Buổi 9).
+    /// </summary>
+    [HttpGet("adult-verified")]
+    [Authorize(Policy = AuthConstants.Policies.AtLeast18)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public IActionResult CheckAdultVerified()
+    {
+        var username = User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.Name);
+        var dateOfBirth = User.FindFirstValue(ClaimTypes.DateOfBirth);
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            verified = true,
+            policy = AuthConstants.Policies.AtLeast18,
+            minimumAge = 18,
+            username,
+            dateOfBirth
+        }, "Xác thực chính sách độ tuổi (>= 18) thành công."));
     }
 
     private ProblemDetails CreateProblemDetails(int statusCode, string title, string detail)

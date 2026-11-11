@@ -5,6 +5,7 @@ using System.Text;
 using Ecosystem.Application.Common;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Entities;
+using Ecosystem.Domain.Enums;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -37,12 +38,21 @@ public class JwtTokenService : IJwtTokenService
         var expiryMinutes = _jwtSettings.ExpiryInMinutes > 0 ? _jwtSettings.ExpiryInMinutes : 60;
         expiresAt = now.AddMinutes(expiryMinutes);
 
+        var department = user.Role switch
+        {
+            UserRole.Host => AuthConstants.Departments.PlatformAdmin,
+            UserRole.Presenter => AuthConstants.Departments.Education,
+            _ => AuthConstants.Departments.Community
+        };
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.ToString()),
+            new(AuthConstants.Claims.Department, department),
+            new(ClaimTypes.DateOfBirth, "1998-01-01"),
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)

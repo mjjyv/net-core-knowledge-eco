@@ -53,9 +53,17 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 08: Authentication Với JWT Bearer Token",
+    phase = "Phase 09: Authorization: Roles, Claims & Policies",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
-}, "Hệ thống đang hoạt động bình thường.")));
+}, "Hệ thống đang hoạt động bình thường.")))
+.AllowAnonymous();
 
 app.Run();
+
+/// <summary>
+/// Partial class công khai phục vụ WebApplicationFactory&lt;Program&gt; trong Integration Testing.
+/// </summary>
+public partial class Program
+{
+}

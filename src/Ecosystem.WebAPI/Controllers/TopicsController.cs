@@ -1,8 +1,10 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappers;
 using Ecosystem.Application.Models;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
@@ -30,6 +32,7 @@ public class TopicsController : ControllerBase
     /// <returns>Danh sách thông tin các Chủ đề dạng TopicResponseDto.</returns>
     /// <response code="200">Lấy danh sách Chủ đề thành công.</response>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<TopicResponseDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IEnumerable<TopicResponseDto>>>> GetAll([FromQuery] TaxonomyFilterQuery query)
     {
@@ -46,6 +49,7 @@ public class TopicsController : ControllerBase
     /// <response code="200">Tìm thấy Chủ đề thành công.</response>
     /// <response code="404">Không tìm thấy Chủ đề với Id tương ứng.</response>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TopicDetailResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<TopicDetailResponseDto>>> GetById([FromRoute] Guid id)
@@ -62,6 +66,7 @@ public class TopicsController : ControllerBase
     /// <response code="200">Tìm thấy Chủ đề theo Slug.</response>
     /// <response code="404">Không tìm thấy Chủ đề với Slug yêu cầu.</response>
     [HttpGet("slug/{slug}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TopicResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<TopicResponseDto>>> GetBySlug([FromRoute] string slug)
@@ -78,6 +83,7 @@ public class TopicsController : ControllerBase
     /// <response code="201">Tạo mới Chủ đề thành công.</response>
     /// <response code="400">Dữ liệu đầu vào không hợp lệ (vi phạm độ dài, định dạng slug, v.v.).</response>
     [HttpPost]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(typeof(ApiResponse<TopicResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ApiResponse<TopicResponseDto>>> Create([FromBody] TopicCreateDto request)
@@ -106,6 +112,7 @@ public class TopicsController : ControllerBase
     /// <response code="400">ID trên route không khớp ID trong request body hoặc dữ liệu vi phạm validation.</response>
     /// <response code="404">Không tìm thấy Chủ đề cần cập nhật.</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -143,6 +150,7 @@ public class TopicsController : ControllerBase
     /// <response code="204">Xóa thành công, không trả về body.</response>
     /// <response code="404">Không tìm thấy Chủ đề cần xóa.</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
@@ -161,6 +169,7 @@ public class TopicsController : ControllerBase
     /// <response code="200">Lấy danh sách Khía cạnh thành công.</response>
     /// <response code="404">Không tìm thấy Chủ đề cha tương ứng.</response>
     [HttpGet("{topicId:guid}/aspects")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<AspectResponseDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<IEnumerable<AspectResponseDto>>>> GetAspectsByTopicId([FromRoute] Guid topicId)
@@ -180,6 +189,7 @@ public class TopicsController : ControllerBase
     /// <response code="400">Dữ liệu đầu vào vi phạm validation.</response>
     /// <response code="404">Không tìm thấy Chủ đề cha tương ứng.</response>
     [HttpPost("{topicId:guid}/aspects")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(typeof(ApiResponse<AspectResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

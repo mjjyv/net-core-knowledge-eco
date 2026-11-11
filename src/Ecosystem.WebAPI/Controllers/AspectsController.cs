@@ -1,8 +1,10 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappers;
 using Ecosystem.Application.Models;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
@@ -31,6 +33,7 @@ public class AspectsController : ControllerBase
     /// <response code="200">Tìm thấy Khía cạnh thành công.</response>
     /// <response code="404">Không tìm thấy Khía cạnh với Id tương ứng.</response>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AspectDetailResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<AspectDetailResponseDto>>> GetById([FromRoute] Guid id)
@@ -48,6 +51,7 @@ public class AspectsController : ControllerBase
     /// <response code="400">ID trên route không khớp ID body hoặc dữ liệu vi phạm validation.</response>
     /// <response code="404">Không tìm thấy Khía cạnh cần cập nhật.</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -85,6 +89,7 @@ public class AspectsController : ControllerBase
     /// <response code="204">Xóa thành công, không trả về body.</response>
     /// <response code="404">Không tìm thấy Khía cạnh cần xóa.</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute] Guid id)
@@ -103,6 +108,7 @@ public class AspectsController : ControllerBase
     /// <response code="200">Lấy danh sách Chuyên mục thành công.</response>
     /// <response code="404">Không tìm thấy Khía cạnh cha tương ứng.</response>
     [HttpGet("{aspectId:guid}/categories")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CategoryResponseDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<IEnumerable<CategoryResponseDto>>>> GetCategoriesByAspectId([FromRoute] Guid aspectId)
@@ -122,6 +128,7 @@ public class AspectsController : ControllerBase
     /// <response code="400">Dữ liệu đầu vào vi phạm validation.</response>
     /// <response code="404">Không tìm thấy Khía cạnh cha tương ứng.</response>
     [HttpPost("{aspectId:guid}/categories")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
     [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

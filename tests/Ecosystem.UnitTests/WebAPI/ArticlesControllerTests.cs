@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using AutoMapper;
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
@@ -8,10 +10,13 @@ using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
 using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.WebAPI.Controllers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 
 namespace Ecosystem.UnitTests.WebAPI;
 
@@ -67,7 +72,7 @@ public class ArticlesControllerTests : IDisposable
         var response = Assert.IsType<ApiResponse<IEnumerable<ArticleResponseDto>>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
-        Assert.Single(response.Data);
+        Assert.Equal(2, response.Data.Count());
     }
 
     [Fact]
@@ -210,5 +215,50 @@ public class ArticlesControllerTests : IDisposable
         // Act 2: Non-existent Category
         var resultNotFound = await _categoriesController.GetArticlesByCategoryId(Guid.NewGuid());
         Assert.IsType<NotFoundObjectResult>(resultNotFound.Result);
+    }
+
+    [Fact]
+    public async Task UpdateAndDelete_WhenOwnershipAuthorizationFails_ReturnsForbidResult()
+    {
+        // Arrange
+        var mockAuthz = new Mock<IAuthorizationService>();
+        mockAuthz.Setup(a => a.AuthorizeAsync(
+                It.IsAny<ClaimsPrincipal>(),
+                It.IsAny<object?>(),
+                AuthConstants.Policies.ArticleOwnerOrHost))
+            .ReturnsAsync(AuthorizationResult.Failed());
+
+        var controller = new ArticlesController(_articleService, mockAuthz.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        new[]
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, "cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            new Claim(ClaimTypes.Role, AuthConstants.Roles.Presenter)
+                        },
+                        "Bearer"))
+                }
+            }
+        };
+
+        var updateDto = new ArticleUpdateDto
+        {
+            CategoryId = CategoryCleanArchId,
+            Title = "Attempt To Modify Other Author Article",
+            MarkdownContent = "# Unauthorized Edit",
+            Status = ArticleStatus.Published
+        };
+
+        // Act
+        var updateResult = await controller.Update(SeededArticleId, updateDto);
+        var deleteResult = await controller.Delete(SeededArticleId);
+
+        // Assert
+        Assert.IsType<ForbidResult>(updateResult.Result);
+        Assert.IsType<ForbidResult>(deleteResult);
     }
 }

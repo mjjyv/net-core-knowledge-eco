@@ -1,13 +1,16 @@
+using System.Security.Claims;
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
 
 /// <summary>
-/// Quản lý RESTful CRUD API cho Bài viết tri thức cấp 4 (Articles) trong Hệ sinh thái (Phase 06).
-/// Áp dụng tối ưu EF Core LINQ, Eager Loading (.Include/.ThenInclude) và ánh xạ DTO triệt tiêu Object Cycle.
+/// Quản lý RESTful CRUD API cho Bài viết tri thức cấp 4 (Articles) trong Hệ sinh thái (Phase 06 &amp; Phase 09).
+/// Áp dụng tối ưu EF Core LINQ, Eager Loading (.Include/.ThenInclude), ánh xạ DTO và Resource-based Authorization.
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
@@ -15,10 +18,14 @@ namespace Ecosystem.WebAPI.Controllers;
 public class ArticlesController : ControllerBase
 {
     private readonly IArticleService _articleService;
+    private readonly IAuthorizationService? _authorizationService;
 
-    public ArticlesController(IArticleService articleService)
+    public ArticlesController(
+        IArticleService articleService,
+        IAuthorizationService? authorizationService = null)
     {
         _articleService = articleService;
+        _authorizationService = authorizationService;
     }
 
     /// <summary>
@@ -29,6 +36,7 @@ public class ArticlesController : ControllerBase
     /// <returns>Danh sách tóm lược các bài viết dạng ArticleResponseDto.</returns>
     /// <response code="200">Lấy danh sách bài viết thành công.</response>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<ArticleResponseDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IEnumerable<ArticleResponseDto>>>> GetAll(
         [FromQuery] ArticleFilterQuery query,
@@ -47,6 +55,7 @@ public class ArticlesController : ControllerBase
     /// <response code="200">Tìm thấy chi tiết bài viết.</response>
     /// <response code="404">Không tìm thấy bài viết với Id tương ứng.</response>
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<ArticleDetailResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<ArticleDetailResponseDto>>> GetById(
@@ -74,6 +83,7 @@ public class ArticlesController : ControllerBase
     /// <response code="200">Tìm thấy chi tiết bài viết theo slug.</response>
     /// <response code="404">Không tìm thấy bài viết với slug tương ứng.</response>
     [HttpGet("slug/{slug}")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<ArticleDetailResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<ArticleDetailResponseDto>>> GetBySlug(
@@ -103,13 +113,28 @@ public class ArticlesController : ControllerBase
     /// <response code="400">Dữ liệu đầu vào không hợp lệ hoặc CategoryId/AuthorId không tồn tại.</response>
     /// <response code="409">Đường dẫn Slug của bài viết đã tồn tại trong hệ thống.</response>
     [HttpPost]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(typeof(ApiResponse<ArticleDetailResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ApiResponse<ArticleDetailResponseDto>>> Create(
         [FromBody] ArticleCreateDto dto,
         CancellationToken cancellationToken = default)
     {
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            if (Guid.TryParse(userIdClaim, out var currentUserId))
+            {
+                if (!User.IsInRole(AuthConstants.Roles.Host) || !dto.AuthorId.HasValue || dto.AuthorId == Guid.Empty)
+                {
+                    dto.AuthorId = currentUserId;
+                }
+            }
+        }
+
         try
         {
             var created = await _articleService.CreateAsync(dto, cancellationToken);
@@ -146,8 +171,11 @@ public class ArticlesController : ControllerBase
     /// <response code="404">Không tìm thấy bài viết cần cập nhật.</response>
     /// <response code="409">Slug mới bị trùng lặp với bài viết khác.</response>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(typeof(ApiResponse<ArticleDetailResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ApiResponse<ArticleDetailResponseDto>>> Update(
@@ -155,6 +183,12 @@ public class ArticlesController : ControllerBase
         [FromBody] ArticleUpdateDto dto,
         CancellationToken cancellationToken = default)
     {
+        var authFailure = await AuthorizeArticleModificationAsync(id, "cập nhật", cancellationToken);
+        if (authFailure != null)
+        {
+            return authFailure;
+        }
+
         try
         {
             var updated = await _articleService.UpdateAsync(id, dto, cancellationToken);
@@ -193,13 +227,22 @@ public class ArticlesController : ControllerBase
     /// <response code="204">Xóa bài viết thành công.</response>
     /// <response code="404">Không tìm thấy bài viết cần xóa.</response>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         [FromRoute] Guid id,
         [FromQuery] bool isHardDelete = false,
         CancellationToken cancellationToken = default)
     {
+        var authFailure = await AuthorizeArticleModificationAsync(id, "xóa", cancellationToken);
+        if (authFailure != null)
+        {
+            return authFailure;
+        }
+
         var deleted = await _articleService.DeleteAsync(id, isHardDelete, cancellationToken);
         if (!deleted)
         {
@@ -210,6 +253,33 @@ public class ArticlesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    private async Task<ActionResult?> AuthorizeArticleModificationAsync(
+        Guid id,
+        string actionDescription,
+        CancellationToken cancellationToken)
+    {
+        if (_authorizationService == null || User?.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var existingArticle = await _articleService.GetByIdAsync(id, incrementView: false, cancellationToken);
+        if (existingArticle == null)
+        {
+            return NotFound(CreateProblemDetails(
+                StatusCodes.Status404NotFound,
+                "Không tìm thấy bài viết",
+                $"Không tìm thấy bài viết với mã '{id}' để {actionDescription}."));
+        }
+
+        var authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            existingArticle,
+            AuthConstants.Policies.ArticleOwnerOrHost);
+
+        return authResult.Succeeded ? null : Forbid();
     }
 
     private ProblemDetails CreateProblemDetails(int statusCode, string title, string detail)

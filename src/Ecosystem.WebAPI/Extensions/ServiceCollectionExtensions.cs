@@ -1,10 +1,14 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using Ecosystem.Application.Common;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
+using Ecosystem.WebAPI.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -88,7 +92,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Cấu hình xác thực JWT Bearer Authentication (Buổi 8).
+    /// Cấu hình xác thực JWT Bearer Authentication và hệ thống Authorization đa lớp Roles / Claims / Policies (Buổi 8 &amp; Buổi 9).
     /// </summary>
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
@@ -121,9 +125,100 @@ public static class ServiceCollectionExtensions
                     IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = async context =>
+                    {
+                        if (context.Response.HasStarted)
+                        {
+                            return;
+                        }
+
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                        if (!context.Response.Headers.ContainsKey("WWW-Authenticate"))
+                        {
+                            var headerValue = string.IsNullOrWhiteSpace(context.Error)
+                                ? "Bearer"
+                                : $"Bearer error=\"{context.Error}\"";
+                            context.Response.Headers.Append("WWW-Authenticate", headerValue);
+                        }
+
+                        var problem = new ProblemDetails
+                        {
+                            Status = StatusCodes.Status401Unauthorized,
+                            Title = "Chưa xác thực (Unauthorized)",
+                            Detail = string.IsNullOrWhiteSpace(context.ErrorDescription)
+                                ? "Yêu cầu bắt buộc phải đính kèm JWT Access Token hợp lệ trong Header Authorization: Bearer <token>."
+                                : context.ErrorDescription,
+                            Instance = context.Request.Path
+                        };
+                        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+                        await context.Response.WriteAsJsonAsync(
+                            problem,
+                            options: null,
+                            contentType: "application/problem+json; charset=utf-8");
+                    },
+                    OnForbidden = async context =>
+                    {
+                        if (context.Response.HasStarted)
+                        {
+                            return;
+                        }
+
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+                        var problem = new ProblemDetails
+                        {
+                            Status = StatusCodes.Status403Forbidden,
+                            Title = "Không có quyền truy cập (Forbidden)",
+                            Detail = "Tài khoản của bạn đã được xác thực nhưng không đủ vai trò, claim hoặc quyền sở hữu tài nguyên để thực hiện thao tác này.",
+                            Instance = context.Request.Path
+                        };
+                        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+                        await context.Response.WriteAsJsonAsync(
+                            problem,
+                            options: null,
+                            contentType: "application/problem+json; charset=utf-8");
+                    }
+                };
             });
 
-        services.AddAuthorization();
+        services.AddSingleton<IAuthorizationHandler, MinimumAgeHandler>();
+        services.AddSingleton<IAuthorizationHandler, ArticleOwnerOrHostHandler>();
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AuthConstants.Policies.RequireHost, policy =>
+                policy.RequireRole(AuthConstants.Roles.Host));
+
+            options.AddPolicy(AuthConstants.Policies.RequireContentCreator, policy =>
+                policy.RequireRole(AuthConstants.Roles.Host, AuthConstants.Roles.Presenter));
+
+            options.AddPolicy(AuthConstants.Policies.MustHaveEcosystemEmail, policy =>
+                policy.RequireAssertion(context =>
+                {
+                    var email = context.User.FindFirstValue(ClaimTypes.Email);
+                    return !string.IsNullOrWhiteSpace(email) &&
+                           email.EndsWith("@ecosystem.vn", StringComparison.OrdinalIgnoreCase);
+                }));
+
+            options.AddPolicy(AuthConstants.Policies.RequireEducatorDepartment, policy =>
+                policy.RequireClaim(
+                    AuthConstants.Claims.Department,
+                    AuthConstants.Departments.PlatformAdmin,
+                    AuthConstants.Departments.Education));
+
+            options.AddPolicy(AuthConstants.Policies.AtLeast18, policy =>
+                policy.Requirements.Add(new MinimumAgeRequirement(18)));
+
+            options.AddPolicy(AuthConstants.Policies.ArticleOwnerOrHost, policy =>
+                policy.Requirements.Add(new ArticleOwnerOrHostRequirement()));
+        });
 
         return services;
     }

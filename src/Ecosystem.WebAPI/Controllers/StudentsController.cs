@@ -1,15 +1,18 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
 
 /// <summary>
-/// Quản lý RESTful CRUD API cho Sinh viên tuân thủ N-Tier Architecture (Buổi 7).
+/// Quản lý RESTful CRUD API cho Sinh viên tuân thủ N-Tier Architecture (Buổi 7 &amp; Buổi 9).
 /// Controller siêu mỏng (Lean Controller) chỉ gọi qua IStudentService — không phụ thuộc DbContext.
 /// </summary>
 [ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
 [Produces("application/json")]
 public class StudentsController : ControllerBase
@@ -57,6 +60,7 @@ public class StudentsController : ControllerBase
     /// Thêm mới một sinh viên.
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(typeof(ApiResponse<StudentResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ApiResponse<StudentResponseDto>>> Create(
@@ -74,6 +78,7 @@ public class StudentsController : ControllerBase
     /// Cập nhật thông tin sinh viên.
     /// </summary>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -90,6 +95,7 @@ public class StudentsController : ControllerBase
     /// Xóa một sinh viên.
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthConstants.Policies.RequireContentCreator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(

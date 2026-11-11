@@ -1,6 +1,8 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecosystem.WebAPI.Controllers;
@@ -30,6 +32,7 @@ public class UsersController : ControllerBase
     /// <response code="400">Dữ liệu đầu vào không hợp lệ (vi phạm Data Annotations hoặc logic kiểm tra).</response>
     /// <response code="409">Tên đăng nhập hoặc địa chỉ Email đã tồn tại trong hệ thống.</response>
     [HttpPost("register")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<UserResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -62,6 +65,7 @@ public class UsersController : ControllerBase
     /// <returns>Danh sách thông tin tóm lược của người dùng (UserResponseDto).</returns>
     /// <response code="200">Lấy danh sách người dùng thành công.</response>
     [HttpGet]
+    [Authorize(Roles = AuthConstants.Roles.Host)]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<UserResponseDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IEnumerable<UserResponseDto>>>> GetAll()
     {
@@ -77,6 +81,7 @@ public class UsersController : ControllerBase
     /// <response code="200">Tìm thấy thông tin người dùng.</response>
     /// <response code="404">Không tìm thấy người dùng với Id yêu cầu.</response>
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = AuthConstants.Roles.Host)]
     [ProducesResponseType(typeof(ApiResponse<UserResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<UserResponseDto>>> GetById([FromRoute] Guid id)

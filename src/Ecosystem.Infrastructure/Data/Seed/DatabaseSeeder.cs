@@ -13,7 +13,7 @@ public static class DatabaseSeeder
 
     public static async Task SeedInitialDataAsync(ApplicationDbContext context)
     {
-        // 1. Seed Tài khoản mẫu chuẩn BCrypt (Host Admin &amp; Audience User)
+        // 1. Seed Tài khoản mẫu chuẩn BCrypt (Host Admin, Presenter Giảng viên &amp; Audience User)
         if (!await context.Users.IgnoreQueryFilters().AnyAsync())
         {
             var adminUser = new User
@@ -24,6 +24,18 @@ public static class DatabaseSeeder
                 FullName = "Hệ Thống Quản Trị Viên",
                 PasswordHash = HashPassword("Admin@123456"),
                 Role = UserRole.Host,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var presenterUser = new User
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Username = "presenter_demo",
+                Email = "presenter@ecosystem.vn",
+                FullName = "Giảng Viên Trần Minh",
+                PasswordHash = HashPassword("Presenter@123456"),
+                Role = UserRole.Presenter,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -40,7 +52,7 @@ public static class DatabaseSeeder
                 CreatedAt = DateTime.UtcNow
             };
 
-            await context.Users.AddRangeAsync(adminUser, standardUser);
+            await context.Users.AddRangeAsync(adminUser, presenterUser, standardUser);
         }
 
         // 2. Seed Cây Tri Thức (Taxonomy Hierarchy 4 cấp)
@@ -137,10 +149,26 @@ public static class DatabaseSeeder
                 CreatedAt = DateTime.UtcNow
             };
 
+            var article2 = new Article
+            {
+                Id = Guid.Parse("22222222-aaaa-c111-a002-222222222222"),
+                CategoryId = category2.Id,
+                AuthorId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Title = "Hướng Dẫn EF Core LINQ Và N-Tier Architecture Trong .NET 8",
+                Slug = "huong-dan-ef-core-linq-va-n-tier-architecture",
+                Summary = "Kỹ thuật tối ưu truy vấn EF Core, sử dụng AsNoTracking và phân tầng dịch vụ sạch sẽ.",
+                MarkdownContent = "# EF Core & N-Tier Architecture\n\nÁp dụng Repository Pattern và Unit of Work kết hợp LINQ Projection.",
+                Status = ArticleStatus.Published,
+                ViewCount = 85,
+                ReadingTimeMinutes = 6,
+                TagsJson = "[\"ef-core\", \"linq\", \"ntier\"]",
+                CreatedAt = DateTime.UtcNow
+            };
+
             await context.Topics.AddRangeAsync(topic1, topic2);
             await context.Aspects.AddRangeAsync(aspect1, aspect2);
             await context.Categories.AddRangeAsync(category1, category2, category3);
-            await context.Articles.AddAsync(article1);
+            await context.Articles.AddRangeAsync(article1, article2);
         }
 
         // 3. Seed Sinh viên mẫu (Lab Buổi 1)
