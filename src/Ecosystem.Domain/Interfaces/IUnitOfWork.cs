@@ -11,6 +11,7 @@ public interface IUnitOfWork : IDisposable
     ICategoryRepository Categories { get; }
     IStudentRepository Students { get; }
     IUserRepository Users { get; }
+    IRefreshTokenRepository RefreshTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);

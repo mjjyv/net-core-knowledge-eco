@@ -13,6 +13,7 @@ builder.Services.AddSwaggerDocumentation();
 builder.Services.AddApplicationServices();
 builder.Services.AddLifetimeDemonstrationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
@@ -40,6 +41,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Thứ tự Middleware bắt buộc: Authentication phải đứng trước Authorization (Buổi 8)
+app.UseAuthentication();
+app.UseAuthorization();
+
 // 3. Map Endpoints & Controllers
 app.MapControllers();
 
@@ -48,7 +53,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 07: N-Tier Architecture, Repository & Unit of Work",
+    phase = "Phase 08: Authentication Với JWT Bearer Token",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")));

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Ecosystem.Domain.Entities;
 using Ecosystem.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Ecosystem.Infrastructure.Data.Seed;
 
 /// <summary>
-/// Dịch vụ khởi tạo dữ liệu mẫu ban đầu cho Cơ sở Dữ liệu (Bài tập 4 &amp; 5 - Buổi 5).
+/// Dịch vụ khởi tạo dữ liệu mẫu ban đầu cho Cơ sở Dữ liệu (Bài tập 4 &amp; 5 - Buổi 5, Buổi 8).
 /// </summary>
 public static class DatabaseSeeder
 {
@@ -15,7 +13,7 @@ public static class DatabaseSeeder
 
     public static async Task SeedInitialDataAsync(ApplicationDbContext context)
     {
-        // 1. Seed Tài khoản Quản trị viên (Admin User)
+        // 1. Seed Tài khoản mẫu chuẩn BCrypt (Host Admin &amp; Audience User)
         if (!await context.Users.IgnoreQueryFilters().AnyAsync())
         {
             var adminUser = new User
@@ -29,7 +27,20 @@ public static class DatabaseSeeder
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
-            await context.Users.AddAsync(adminUser);
+
+            var standardUser = new User
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Username = "user_demo",
+                Email = "user@ecosystem.vn",
+                FullName = "Thành Viên Cộng Đồng",
+                PasswordHash = HashPassword("User@123456"),
+                Role = UserRole.Audience,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await context.Users.AddRangeAsync(adminUser, standardUser);
         }
 
         // 2. Seed Cây Tri Thức (Taxonomy Hierarchy 4 cấp)
@@ -155,7 +166,6 @@ public static class DatabaseSeeder
 
     private static string HashPassword(string password)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
+        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 11);
     }
 }

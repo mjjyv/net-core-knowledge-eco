@@ -202,6 +202,7 @@ public class ApplicationDbContextTests : IDisposable
 
             // Assert 1
             Assert.True(await context.Users.AnyAsync(u => u.Email == "admin@ecosystem.vn"));
+            Assert.True(await context.Users.AnyAsync(u => u.Email == "user@ecosystem.vn"));
             Assert.True(await context.Topics.AnyAsync(t => t.Slug == "lap-trinh-dotnet-aspnet-core"));
             Assert.True(await context.Aspects.AnyAsync(a => a.Slug == "kien-truc-backend-csharp"));
             Assert.True(await context.Categories.AnyAsync(c => c.Slug == "clean-architecture-cqrs"));
@@ -214,7 +215,7 @@ public class ApplicationDbContextTests : IDisposable
             // Assert 2
             var userCount = await context.Users.CountAsync();
             var topicCount = await context.Topics.CountAsync();
-            Assert.Equal(1, userCount);
+            Assert.Equal(2, userCount);
             Assert.Equal(2, topicCount);
         }
     }

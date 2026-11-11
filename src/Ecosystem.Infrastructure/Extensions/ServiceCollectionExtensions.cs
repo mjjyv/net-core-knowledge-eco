@@ -2,6 +2,7 @@ using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Interfaces;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Repositories;
+using Ecosystem.Infrastructure.Security;
 using Ecosystem.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -45,7 +46,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Đăng ký dịch vụ bảo mật & JWT
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         // Đăng ký dịch vụ chẩn đoán DB cho tầng WebAPI
         services.AddScoped<IDatabaseDiagnosticsService, DatabaseDiagnosticsService>();

@@ -1,7 +1,11 @@
 using System.Reflection;
+using System.Text;
+using Ecosystem.Application.Common;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 namespace Ecosystem.WebAPI.Extensions;
@@ -12,7 +16,7 @@ namespace Ecosystem.WebAPI.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Đăng ký tài liệu tự động Swagger / OpenAPI kèm XML Comments chi tiết (Buổi 4).
+    /// Đăng ký tài liệu tự động Swagger / OpenAPI kèm XML Comments và cấu hình JWT Bearer Authorization (Buổi 4 &amp; Buổi 8).
     /// </summary>
     public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
@@ -23,7 +27,7 @@ public static class ServiceCollectionExtensions
             {
                 Title = "The Ecosystem Web API",
                 Version = "v1",
-                Description = "Hệ sinh thái tri thức và giao tiếp hợp nhất (Unified Knowledge & Communication Ecosystem) - Backend ASP.NET Core .NET 8 C#. Quản lý Cây tri thức phân cấp và Tài khoản người dùng với DTO & Validation chặt chẽ.",
+                Description = "Hệ sinh thái tri thức và giao tiếp hợp nhất (Unified Knowledge & Communication Ecosystem) - Backend ASP.NET Core .NET 8 C#. Hỗ trợ xác thực JWT Bearer Token, N-Tier Architecture, CRUD EF Core và Validation chặt chẽ.",
                 Contact = new OpenApiContact
                 {
                     Name = "The Ecosystem Architecture Team",
@@ -34,6 +38,32 @@ public static class ServiceCollectionExtensions
                 {
                     Name = "MIT License",
                     Url = new Uri("https://opensource.org/licenses/MIT")
+                }
+            });
+
+            // Cấu hình hỗ trợ Authorize Bearer Token trên giao diện Swagger UI (Bài tập 4 - Buổi 8)
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Description = "Nhập JWT Access Token (Swagger sẽ tự động thêm tiền tố 'Bearer '). Ví dụ: eyJhbGciOiJIUzI1Ni...",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
                 }
             });
 
@@ -58,6 +88,47 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Cấu hình xác thực JWT Bearer Authentication (Buổi 8).
+    /// </summary>
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSection = configuration.GetSection(JwtSettings.SectionName);
+        services.Configure<JwtSettings>(jwtSection);
+
+        var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings();
+        if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || Encoding.UTF8.GetByteCount(jwtSettings.SecretKey) < 32)
+        {
+            throw new InvalidOperationException("Cấu hình JwtSettings:SecretKey bị thiếu hoặc nhỏ hơn 32 bytes (256 bit).");
+        }
+
+        var keyBytes = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+        services.AddAuthorization();
+
+        return services;
+    }
+
+    /// <summary>
     /// Đăng ký AutoMapper và các dịch vụ nghiệp vụ cốt lõi của tầng Application với vòng đời chuẩn DI (Scoped cho các dịch vụ dùng UnitOfWork).
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
@@ -74,6 +145,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IArticleService, ArticleService>();
         services.AddScoped<IStudentService, StudentService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

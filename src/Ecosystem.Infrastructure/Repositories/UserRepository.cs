@@ -30,6 +30,14 @@ public class UserRepository : GenericRepository<User>, IUserRepository
             .FirstOrDefaultAsync(u => u.Email.ToLower() == clean, cancellationToken);
     }
 
+    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken cancellationToken = default)
+    {
+        var clean = usernameOrEmail.Trim().ToLowerInvariant();
+        return await _dbSet
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == clean || u.Email.ToLower() == clean, cancellationToken);
+    }
+
     public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         var clean = username.Trim().ToLowerInvariant();

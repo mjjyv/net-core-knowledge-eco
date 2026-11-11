@@ -6,6 +6,7 @@ using Ecosystem.Domain.Common;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
 using Ecosystem.Infrastructure.Repositories;
+using Ecosystem.Infrastructure.Security;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
@@ -38,7 +39,7 @@ public class UsersControllerTests : IDisposable
         var mapper = config.CreateMapper();
 
         _unitOfWork = new UnitOfWork(context);
-        _userService = new UserService(_unitOfWork, mapper, NullLogger<UserService>.Instance);
+        _userService = new UserService(_unitOfWork, new BCryptPasswordHasher(), mapper, NullLogger<UserService>.Instance);
         _controller = new UsersController(_userService);
     }
 

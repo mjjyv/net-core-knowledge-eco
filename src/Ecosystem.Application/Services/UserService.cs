@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using AutoMapper;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
@@ -12,20 +10,23 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Ecosystem.Application.Services;
 
 /// <summary>
-/// Dịch vụ quản lý tài khoản người dùng sử dụng IUnitOfWork và AutoMapper (N-Tier Architecture).
+/// Dịch vụ quản lý tài khoản người dùng sử dụng IUnitOfWork, IPasswordHasher (BCrypt) và AutoMapper.
 /// </summary>
 public class UserService : IUserService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly IMapper _mapper;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
         IUnitOfWork unitOfWork,
+        IPasswordHasher passwordHasher,
         IMapper mapper,
         ILogger<UserService>? logger = null)
     {
         _unitOfWork = unitOfWork;
+        _passwordHasher = passwordHasher;
         _mapper = mapper;
         _logger = logger ?? NullLogger<UserService>.Instance;
     }
@@ -50,7 +51,7 @@ public class UserService : IUserService
             Username = dto.Username.Trim(),
             Email = dto.Email.Trim(),
             FullName = dto.Username.Trim(),
-            PasswordHash = HashPassword(dto.Password),
+            PasswordHash = _passwordHasher.HashPassword(dto.Password),
             Role = UserRole.Audience,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -77,11 +78,5 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id);
         return user == null ? null : _mapper.Map<UserResponseDto>(user);
-    }
-
-    private static string HashPassword(string password)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
     }
 }

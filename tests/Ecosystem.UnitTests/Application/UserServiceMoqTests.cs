@@ -1,5 +1,6 @@
 using AutoMapper;
 using Ecosystem.Application.DTOs;
+using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Entities;
@@ -16,6 +17,7 @@ public class UserServiceMoqTests
 {
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly Mock<IUserRepository> _mockUserRepo;
+    private readonly Mock<IPasswordHasher> _mockPasswordHasher;
     private readonly IMapper _mapper;
     private readonly UserService _service;
 
@@ -23,12 +25,14 @@ public class UserServiceMoqTests
     {
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockUserRepo = new Mock<IUserRepository>();
+        _mockPasswordHasher = new Mock<IPasswordHasher>();
         _mockUnitOfWork.Setup(u => u.Users).Returns(_mockUserRepo.Object);
+        _mockPasswordHasher.Setup(h => h.HashPassword(It.IsAny<string>())).Returns("bcrypt_hashed");
 
         var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>(), NullLoggerFactory.Instance);
         _mapper = config.CreateMapper();
 
-        _service = new UserService(_mockUnitOfWork.Object, _mapper, NullLogger<UserService>.Instance);
+        _service = new UserService(_mockUnitOfWork.Object, _mockPasswordHasher.Object, _mapper, NullLogger<UserService>.Instance);
     }
 
     [Fact]

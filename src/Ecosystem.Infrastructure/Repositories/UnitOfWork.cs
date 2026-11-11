@@ -19,6 +19,7 @@ public class UnitOfWork : IUnitOfWork
     private ICategoryRepository? _categories;
     private IStudentRepository? _students;
     private IUserRepository? _users;
+    private IRefreshTokenRepository? _refreshTokens;
 
     public UnitOfWork(ApplicationDbContext context)
     {
@@ -31,6 +32,7 @@ public class UnitOfWork : IUnitOfWork
     public ICategoryRepository Categories => _categories ??= new CategoryRepository(_context);
     public IStudentRepository Students => _students ??= new StudentRepository(_context);
     public IUserRepository Users => _users ??= new UserRepository(_context);
+    public IRefreshTokenRepository RefreshTokens => _refreshTokens ??= new RefreshTokenRepository(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
