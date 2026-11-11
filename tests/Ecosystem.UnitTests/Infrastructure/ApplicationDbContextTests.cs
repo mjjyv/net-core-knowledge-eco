@@ -233,7 +233,7 @@ public class ApplicationDbContextTests : IDisposable
             new Ecosystem.Application.Services.LifetimeService(),
             new Ecosystem.Application.Services.LifetimeService(),
             new Ecosystem.Application.Services.LifetimeService(),
-            context);
+            new Ecosystem.Infrastructure.Services.DatabaseDiagnosticsService(context));
 
         // Act
         var result = await controller.GetDatabaseStatusAsync();
@@ -242,8 +242,9 @@ public class ApplicationDbContextTests : IDisposable
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, okResult.StatusCode);
 
-        var response = Assert.IsType<ApiResponse<object>>(okResult.Value);
+        var response = Assert.IsType<ApiResponse<Ecosystem.Application.Interfaces.DatabaseStatusReport>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
+        Assert.True(response.Data.CanConnect);
     }
 }

@@ -1,18 +1,23 @@
+using AutoMapper;
 using Ecosystem.Application.DTOs;
+using Ecosystem.Application.Mappings;
+using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
+using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ecosystem.UnitTests.WebAPI;
 
 public class StudentsControllerTests : IDisposable
 {
     private readonly SqliteConnection _connection;
-    private readonly ApplicationDbContext _context;
+    private readonly UnitOfWork _unitOfWork;
     private readonly StudentsController _controller;
 
     private static readonly Guid SeededStudent1Id = Guid.Parse("33333333-3333-3333-3333-333333333331");
@@ -26,16 +31,21 @@ public class StudentsControllerTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        _context = new ApplicationDbContext(options);
-        _context.Database.EnsureCreated();
-        DatabaseSeeder.SeedInitialDataAsync(_context).GetAwaiter().GetResult();
+        var context = new ApplicationDbContext(options);
+        context.Database.EnsureCreated();
+        DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
 
-        _controller = new StudentsController(_context);
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>(), NullLoggerFactory.Instance);
+        var mapper = config.CreateMapper();
+
+        _unitOfWork = new UnitOfWork(context);
+        var studentService = new StudentService(_unitOfWork, mapper, NullLogger<StudentService>.Instance);
+        _controller = new StudentsController(studentService);
     }
 
     public void Dispose()
     {
-        _context.Dispose();
+        _unitOfWork.Dispose();
         _connection.Dispose();
         GC.SuppressFinalize(this);
     }

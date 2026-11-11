@@ -1,117 +1,82 @@
 using System.Security.Cryptography;
 using System.Text;
+using AutoMapper;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
 using Ecosystem.Domain.Entities;
 using Ecosystem.Domain.Enums;
+using Ecosystem.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ecosystem.Application.Services;
 
 /// <summary>
-/// Dịch vụ quản lý tài khoản người dùng lưu trữ trong bộ nhớ (In-Memory Lab Buổi 4).
+/// Dịch vụ quản lý tài khoản người dùng sử dụng IUnitOfWork và AutoMapper (N-Tier Architecture).
 /// </summary>
 public class UserService : IUserService
 {
-    private readonly List<User> _users = new();
-    private readonly object _lock = new();
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService()
+    public UserService(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        ILogger<UserService>? logger = null)
     {
-        // Seed một tài khoản mẫu mặc định
-        SeedInitialUsers();
+        _unitOfWork = unitOfWork;
+        _mapper = mapper;
+        _logger = logger ?? NullLogger<UserService>.Instance;
     }
 
-    private void SeedInitialUsers()
+    public async Task<UserResponseDto> RegisterAsync(UserRegisterDto dto)
     {
-        var defaultUser = new User
+        _logger.LogInformation("Yêu cầu đăng ký tài khoản mới cho Username '{Username}'", dto.Username);
+
+        if (await _unitOfWork.Users.ExistsByUsernameAsync(dto.Username))
         {
-            Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-            Username = "admin_demo",
-            Email = "admin@ecosystem.vn",
-            PasswordHash = HashPassword("Admin@123456"),
-            Role = UserRole.Host,
+            throw new InvalidOperationException($"Tên đăng nhập '{dto.Username}' đã tồn tại trong hệ sinh thái.");
+        }
+
+        if (await _unitOfWork.Users.ExistsByEmailAsync(dto.Email))
+        {
+            throw new InvalidOperationException($"Địa chỉ email '{dto.Email}' đã được đăng ký bởi tài khoản khác.");
+        }
+
+        var newUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = dto.Username.Trim(),
+            Email = dto.Email.Trim(),
+            FullName = dto.Username.Trim(),
+            PasswordHash = HashPassword(dto.Password),
+            Role = UserRole.Audience,
+            IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
-        _users.Add(defaultUser);
+
+        await _unitOfWork.Users.AddAsync(newUser);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("Đã đăng ký thành công tài khoản {UserId} ({Username})", newUser.Id, newUser.Username);
+
+        var response = _mapper.Map<UserResponseDto>(newUser);
+        response.Age = dto.Age;
+        response.PhoneNumber = dto.PhoneNumber;
+        return response;
     }
 
-    public Task<UserResponseDto> RegisterAsync(UserRegisterDto dto)
+    public async Task<IEnumerable<UserResponseDto>> GetAllUsersAsync()
     {
-        lock (_lock)
-        {
-            // Kiểm tra trùng lặp Username
-            if (_users.Any(u => u.Username.Equals(dto.Username, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new InvalidOperationException($"Tên đăng nhập '{dto.Username}' đã tồn tại trong hệ sinh thái.");
-            }
-
-            // Kiểm tra trùng lặp Email
-            if (_users.Any(u => u.Email.Equals(dto.Email, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new InvalidOperationException($"Địa chỉ email '{dto.Email}' đã được đăng ký bởi tài khoản khác.");
-            }
-
-            var newUser = new User
-            {
-                Id = Guid.NewGuid(),
-                Username = dto.Username,
-                Email = dto.Email,
-                PasswordHash = HashPassword(dto.Password),
-                Role = UserRole.Audience,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _users.Add(newUser);
-
-            return Task.FromResult(new UserResponseDto
-            {
-                Id = newUser.Id,
-                Username = newUser.Username,
-                Email = newUser.Email,
-                Age = dto.Age,
-                PhoneNumber = dto.PhoneNumber,
-                Role = newUser.Role.ToString(),
-                CreatedAt = newUser.CreatedAt
-            });
-        }
+        var users = await _unitOfWork.Users.GetAllAsync();
+        return _mapper.Map<IEnumerable<UserResponseDto>>(users);
     }
 
-    public Task<IEnumerable<UserResponseDto>> GetAllUsersAsync()
+    public async Task<UserResponseDto?> GetUserByIdAsync(Guid id)
     {
-        lock (_lock)
-        {
-            var dtos = _users.Select(u => new UserResponseDto
-            {
-                Id = u.Id,
-                Username = u.Username,
-                Email = u.Email,
-                Age = 25, // Giá trị hiển thị mặc định
-                Role = u.Role.ToString(),
-                CreatedAt = u.CreatedAt
-            }).ToList();
-
-            return Task.FromResult<IEnumerable<UserResponseDto>>(dtos);
-        }
-    }
-
-    public Task<UserResponseDto?> GetUserByIdAsync(Guid id)
-    {
-        lock (_lock)
-        {
-            var user = _users.FirstOrDefault(u => u.Id == id);
-            if (user == null)
-                return Task.FromResult<UserResponseDto?>(null);
-
-            return Task.FromResult<UserResponseDto?>(new UserResponseDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                Age = 25,
-                Role = user.Role.ToString(),
-                CreatedAt = user.CreatedAt
-            });
-        }
+        var user = await _unitOfWork.Users.GetByIdAsync(id);
+        return user == null ? null : _mapper.Map<UserResponseDto>(user);
     }
 
     private static string HashPassword(string password)

@@ -1,20 +1,52 @@
+using AutoMapper;
 using Ecosystem.Application.DTOs;
+using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
+using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Data.Seed;
+using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ecosystem.UnitTests.WebAPI;
 
-public class UsersControllerTests
+public class UsersControllerTests : IDisposable
 {
+    private readonly SqliteConnection _connection;
+    private readonly UnitOfWork _unitOfWork;
     private readonly UserService _userService;
     private readonly UsersController _controller;
 
     public UsersControllerTests()
     {
-        _userService = new UserService();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        var context = new ApplicationDbContext(options);
+        context.Database.EnsureCreated();
+        DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
+
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>(), NullLoggerFactory.Instance);
+        var mapper = config.CreateMapper();
+
+        _unitOfWork = new UnitOfWork(context);
+        _userService = new UserService(_unitOfWork, mapper, NullLogger<UserService>.Instance);
         _controller = new UsersController(_userService);
+    }
+
+    public void Dispose()
+    {
+        _unitOfWork.Dispose();
+        _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

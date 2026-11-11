@@ -66,6 +66,17 @@ public static class DatabaseSeeder
                 CreatedAt = DateTime.UtcNow
             };
 
+            var aspect2 = new Aspect
+            {
+                Id = Guid.Parse("22222222-aaaa-2222-2222-222222222222"),
+                TopicId = topic2.Id,
+                Title = "Cộng Tác Thời Gian Thực SignalR",
+                Slug = "cong-tac-thoi-gian-thuc-signalr",
+                Description = "Đồng bộ con trỏ chuột và lớp học tương tác thời gian thực.",
+                OrderIndex = 1,
+                CreatedAt = DateTime.UtcNow
+            };
+
             var category1 = new Category
             {
                 Id = Guid.Parse("11111111-aaaa-c111-1111-111111111111"),
@@ -88,6 +99,17 @@ public static class DatabaseSeeder
                 CreatedAt = DateTime.UtcNow
             };
 
+            var category3 = new Category
+            {
+                Id = Guid.Parse("22222222-aaaa-c111-2222-222222222222"),
+                AspectId = aspect2.Id,
+                Title = "Presence Cursors & Classroom Hub",
+                Slug = "presence-cursors-classroom-hub",
+                Description = "Quản lý phòng học và giao tiếp SignalR độ trễ thấp.",
+                OrderIndex = 1,
+                CreatedAt = DateTime.UtcNow
+            };
+
             var article1 = new Article
             {
                 Id = Guid.Parse("11111111-aaaa-c111-a001-111111111111"),
@@ -105,8 +127,8 @@ public static class DatabaseSeeder
             };
 
             await context.Topics.AddRangeAsync(topic1, topic2);
-            await context.Aspects.AddAsync(aspect1);
-            await context.Categories.AddRangeAsync(category1, category2);
+            await context.Aspects.AddRangeAsync(aspect1, aspect2);
+            await context.Categories.AddRangeAsync(category1, category2, category3);
             await context.Articles.AddAsync(article1);
         }
 

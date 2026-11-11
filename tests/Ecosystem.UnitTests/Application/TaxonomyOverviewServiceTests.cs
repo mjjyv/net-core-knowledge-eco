@@ -1,12 +1,42 @@
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Exceptions;
-using Xunit;
+using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Data.Seed;
+using Ecosystem.Infrastructure.Repositories;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecosystem.UnitTests.Application;
 
-public class TaxonomyOverviewServiceTests
+public class TaxonomyOverviewServiceTests : IDisposable
 {
-    private readonly TaxonomyOverviewService _service = new();
+    private readonly SqliteConnection _connection;
+    private readonly UnitOfWork _unitOfWork;
+    private readonly TaxonomyOverviewService _service;
+
+    public TaxonomyOverviewServiceTests()
+    {
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        var context = new ApplicationDbContext(options);
+        context.Database.EnsureCreated();
+        DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
+
+        _unitOfWork = new UnitOfWork(context);
+        _service = new TaxonomyOverviewService(_unitOfWork);
+    }
+
+    public void Dispose()
+    {
+        _unitOfWork.Dispose();
+        _connection.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     [Fact]
     public async Task GetTaxonomyHierarchyAsync_ShouldReturnBaselineTopics()
@@ -18,7 +48,7 @@ public class TaxonomyOverviewServiceTests
         Assert.NotNull(topics);
         Assert.True(topics.Count >= 2, "Hệ thống phải có ít nhất 2 chủ đề lớn cốt lõi.");
         Assert.Contains(topics, t => t.Slug == "lap-trinh-dotnet-aspnet-core");
-        Assert.Contains(topics, t => t.Slug == "kien-truc-he-thong-thoi-gian-thuc");
+        Assert.Contains(topics, t => t.Slug == "kien-truc-he-thong-phan-tan");
     }
 
     [Fact]
@@ -29,7 +59,7 @@ public class TaxonomyOverviewServiceTests
 
         // Assert
         Assert.NotNull(topic);
-        Assert.Equal("Lập trình .NET & ASP.NET Core", topic.Title);
+        Assert.Equal("Lập Trình .NET & ASP.NET Core", topic.Title);
         Assert.NotEmpty(topic.Aspects);
     }
 

@@ -1,16 +1,42 @@
 using Ecosystem.Application.Models;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Exceptions;
+using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Data.Seed;
+using Ecosystem.Infrastructure.Repositories;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecosystem.UnitTests.Application;
 
-public class TaxonomyServiceTests
+public class TaxonomyServiceTests : IDisposable
 {
+    private readonly SqliteConnection _connection;
+    private readonly UnitOfWork _unitOfWork;
     private readonly TaxonomyService _service;
 
     public TaxonomyServiceTests()
     {
-        _service = new TaxonomyService();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        var context = new ApplicationDbContext(options);
+        context.Database.EnsureCreated();
+        DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
+
+        _unitOfWork = new UnitOfWork(context);
+        _service = new TaxonomyService(_unitOfWork);
+    }
+
+    public void Dispose()
+    {
+        _unitOfWork.Dispose();
+        _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]
@@ -23,7 +49,7 @@ public class TaxonomyServiceTests
         Assert.NotNull(topics);
         Assert.True(topics.Count >= 2);
         Assert.Contains(topics, t => t.Slug == "lap-trinh-dotnet-aspnet-core");
-        Assert.Contains(topics, t => t.Slug == "kien-truc-he-thong-thoi-gian-thuc");
+        Assert.Contains(topics, t => t.Slug == "kien-truc-he-thong-phan-tan");
     }
 
     [Fact]
@@ -32,7 +58,7 @@ public class TaxonomyServiceTests
         // Arrange
         var query = new TaxonomyFilterQuery
         {
-            SearchTerm = "SignalR"
+            SearchTerm = "Microservices"
         };
 
         // Act
@@ -40,7 +66,7 @@ public class TaxonomyServiceTests
 
         // Assert
         Assert.Single(topics);
-        Assert.Equal("kien-truc-he-thong-thoi-gian-thuc", topics[0].Slug);
+        Assert.Equal("kien-truc-he-thong-phan-tan", topics[0].Slug);
     }
 
     [Fact]

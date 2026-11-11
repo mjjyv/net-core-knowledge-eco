@@ -1,5 +1,7 @@
 using Ecosystem.Application.Interfaces;
+using Ecosystem.Domain.Interfaces;
 using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -8,18 +10,16 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Ecosystem.Infrastructure.Extensions;
 
 /// <summary>
-/// Các phương thức mở rộng đăng ký dịch vụ tầng Infrastructure vào DI Container.
+/// Các phương thức mở rộng đăng ký dịch vụ tầng Infrastructure vào DI Container (DbContext, Repositories, UnitOfWork).
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Đăng ký ApplicationDbContext với cơ chế đa nhà cung cấp cơ sở dữ liệu (SQLite mặc định, SQL Server).
-    /// Vòng đời đăng ký là Scoped theo chuẩn Best Practice của Web API.
-    /// Đồng thời đăng ký dịch vụ quản trị dữ liệu bài viết IArticleService.
+    /// Đăng ký ApplicationDbContext, toàn bộ Repositories và UnitOfWork với vòng đời Scoped.
     /// </summary>
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Data Source=theEcosystem.db";
         var provider = configuration["DatabaseProvider"] ?? "Sqlite";
 
@@ -37,8 +37,18 @@ public static class ServiceCollectionExtensions
             }
         });
 
-        // Đăng ký dịch vụ thao tác dữ liệu bài viết (Scoped theo DbContext)
-        services.AddScoped<IArticleService, ArticleService>();
+        // Đăng ký Repositories & Unit of Work (vòng đời Scoped đồng bộ với ApplicationDbContext)
+        services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IArticleRepository, ArticleRepository>();
+        services.AddScoped<ITopicRepository, TopicRepository>();
+        services.AddScoped<IAspectRepository, AspectRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Đăng ký dịch vụ chẩn đoán DB cho tầng WebAPI
+        services.AddScoped<IDatabaseDiagnosticsService, DatabaseDiagnosticsService>();
 
         return services;
     }

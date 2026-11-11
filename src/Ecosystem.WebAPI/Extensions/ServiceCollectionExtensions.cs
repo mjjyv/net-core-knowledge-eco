@@ -1,5 +1,6 @@
 using System.Reflection;
 using Ecosystem.Application.Interfaces;
+using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
 using Microsoft.OpenApi.Models;
 
@@ -57,19 +58,22 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Đăng ký các dịch vụ nghiệp vụ cốt lõi của tầng Application.
+    /// Đăng ký AutoMapper và các dịch vụ nghiệp vụ cốt lõi của tầng Application với vòng đời chuẩn DI (Scoped cho các dịch vụ dùng UnitOfWork).
     /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        // Dịch vụ quản lý sinh viên thực hành Buổi 1
+        // Đăng ký AutoMapper Profile
+        services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
+
+        // Dịch vụ thực hành Buổi 1 (In-memory manager)
         services.AddSingleton<IStudentManager, StudentManager>();
 
-        // Dịch vụ Cây Tri Thức cho The Ecosystem (Overview & Full CRUD)
+        // Các dịch vụ nghiệp vụ N-Tier sử dụng IUnitOfWork (bắt buộc Scoped để khớp ApplicationDbContext)
         services.AddScoped<ITaxonomyOverviewService, TaxonomyOverviewService>();
-        services.AddSingleton<ITaxonomyService, TaxonomyService>();
-
-        // Dịch vụ Quản lý & Đăng ký Người dùng (Lab Buổi 4)
-        services.AddSingleton<IUserService, UserService>();
+        services.AddScoped<ITaxonomyService, TaxonomyService>();
+        services.AddScoped<IArticleService, ArticleService>();
+        services.AddScoped<IStudentService, StudentService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

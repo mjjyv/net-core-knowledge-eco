@@ -1,10 +1,14 @@
+using AutoMapper;
 using Ecosystem.Application.DTOs;
+using Ecosystem.Application.Mappings;
+using Ecosystem.Application.Services;
 using Ecosystem.Domain.Enums;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
-using Ecosystem.Infrastructure.Services;
+using Ecosystem.Infrastructure.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ecosystem.UnitTests.Infrastructure;
 
@@ -12,6 +16,7 @@ public class ArticleServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<ApplicationDbContext> _options;
+    private readonly IMapper _mapper;
 
     private static readonly Guid CategoryCleanArchId = Guid.Parse("11111111-aaaa-c111-1111-111111111111");
     private static readonly Guid CategoryEfCoreId = Guid.Parse("11111111-aaaa-c222-1111-111111111111");
@@ -27,10 +32,16 @@ public class ArticleServiceTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>(), NullLoggerFactory.Instance);
+        _mapper = config.CreateMapper();
+
         using var context = new ApplicationDbContext(_options);
         context.Database.EnsureCreated();
         DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
     }
+
+    private ArticleService CreateService(ApplicationDbContext context) =>
+        new(new UnitOfWork(context), _mapper, NullLogger<ArticleService>.Instance);
 
     public void Dispose()
     {
@@ -43,7 +54,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var dto = new ArticleCreateDto
         {
@@ -76,7 +87,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var dto = new ArticleCreateDto
         {
@@ -95,7 +106,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var dto = new ArticleCreateDto
         {
@@ -113,7 +124,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var before = await service.GetByIdAsync(SeededArticleId, incrementView: false);
         Assert.NotNull(before);
@@ -133,7 +144,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         // Act
         var article = await service.GetBySlugAsync("huong-dan-thiet-ke-solution-chuan-clean-architecture-trong-net-8");
@@ -149,7 +160,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         await service.CreateAsync(new ArticleCreateDto
         {
@@ -178,7 +189,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         // Act
         var results = (await service.GetByCategoryIdAsync(CategoryCleanArchId)).ToList();
@@ -193,7 +204,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var updateDto = new ArticleUpdateDto
         {
@@ -222,7 +233,7 @@ public class ArticleServiceTests : IDisposable
     {
         // Arrange
         await using var context = new ApplicationDbContext(_options);
-        var service = new ArticleService(context);
+        var service = CreateService(context);
 
         var created = await service.CreateAsync(new ArticleCreateDto
         {

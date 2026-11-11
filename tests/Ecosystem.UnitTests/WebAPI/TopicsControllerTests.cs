@@ -2,20 +2,46 @@ using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Models;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
+using Ecosystem.Infrastructure.Data;
+using Ecosystem.Infrastructure.Data.Seed;
+using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecosystem.UnitTests.WebAPI;
 
-public class TopicsControllerTests
+public class TopicsControllerTests : IDisposable
 {
+    private readonly SqliteConnection _connection;
+    private readonly UnitOfWork _unitOfWork;
     private readonly TaxonomyService _taxonomyService;
     private readonly TopicsController _controller;
 
     public TopicsControllerTests()
     {
-        _taxonomyService = new TaxonomyService();
+        _connection = new SqliteConnection("DataSource=:memory:");
+        _connection.Open();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        var context = new ApplicationDbContext(options);
+        context.Database.EnsureCreated();
+        DatabaseSeeder.SeedInitialDataAsync(context).GetAwaiter().GetResult();
+
+        _unitOfWork = new UnitOfWork(context);
+        _taxonomyService = new TaxonomyService(_unitOfWork);
         _controller = new TopicsController(_taxonomyService);
+    }
+
+    public void Dispose()
+    {
+        _unitOfWork.Dispose();
+        _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

@@ -1,14 +1,17 @@
+using AutoMapper;
 using Ecosystem.Application.DTOs;
+using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
 using Ecosystem.Domain.Common;
 using Ecosystem.Domain.Enums;
 using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
-using Ecosystem.Infrastructure.Services;
+using Ecosystem.Infrastructure.Repositories;
 using Ecosystem.WebAPI.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ecosystem.UnitTests.WebAPI;
 
@@ -16,6 +19,7 @@ public class ArticlesControllerTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly ApplicationDbContext _context;
+    private readonly UnitOfWork _unitOfWork;
     private readonly ArticleService _articleService;
     private readonly ArticlesController _controller;
     private readonly CategoriesController _categoriesController;
@@ -36,14 +40,18 @@ public class ArticlesControllerTests : IDisposable
         _context.Database.EnsureCreated();
         DatabaseSeeder.SeedInitialDataAsync(_context).GetAwaiter().GetResult();
 
-        _articleService = new ArticleService(_context);
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>(), NullLoggerFactory.Instance);
+        var mapper = config.CreateMapper();
+
+        _unitOfWork = new UnitOfWork(_context);
+        _articleService = new ArticleService(_unitOfWork, mapper, NullLogger<ArticleService>.Instance);
         _controller = new ArticlesController(_articleService);
-        _categoriesController = new CategoriesController(new TaxonomyService(), _articleService);
+        _categoriesController = new CategoriesController(new TaxonomyService(_unitOfWork), _articleService);
     }
 
     public void Dispose()
     {
-        _context.Dispose();
+        _unitOfWork.Dispose();
         _connection.Dispose();
         GC.SuppressFinalize(this);
     }
