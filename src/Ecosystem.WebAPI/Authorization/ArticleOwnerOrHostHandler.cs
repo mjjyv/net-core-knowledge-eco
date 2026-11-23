@@ -8,7 +8,7 @@ namespace Ecosystem.WebAPI.Authorization;
 /// <summary>
 /// Resource-based AuthorizationHandler kiểm tra quyền sở hữu bài viết:
 /// - Host có toàn quyền chỉnh sửa/xóa mọi bài viết.
-/// - Presenter chỉ được chỉnh sửa/xóa bài viết do chính mình tạo (AuthorId == currentUserId).
+/// - Presenter chỉ được chỉnh sửa/xóa bài viết do chính mình tạo ra (AuthorId == currentUserId).
 /// </summary>
 public class ArticleOwnerOrHostHandler
     : AuthorizationHandler<ArticleOwnerOrHostRequirement, ArticleDetailResponseDto>
