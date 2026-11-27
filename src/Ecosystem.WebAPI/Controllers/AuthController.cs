@@ -23,96 +23,58 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    #region Nested Sub-Resource: Categories of Aspect
+
     /// <summary>
-    /// Đăng ký tài khoản mới và cấp ngay cặp Access Token (JWT) + Refresh Token.
+    /// Lấy danh sách các Chuyên mục (Categories) thuộc về một Khía cạnh cụ thể (Nested Resource).
     /// </summary>
-    [HttpPost("register")]
+    /// <param name="aspectId">Mã định danh của Khía cạnh cha.</param>
+    /// <returns>Danh sách Chuyên mục dạng CategoryResponseDto.</returns>
+    /// <response code="200">Lấy danh sách Chuyên mục thành công.</response>
+    /// <response code="404">Không tìm thấy Khía cạnh cha tương ứng.</response>
+    [HttpGet("{aspectId:guid}/categories")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<CategoryResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<CategoryResponseDto>>>> GetCategoriesByAspectId([FromRoute] Guid aspectId)
+    {
+        var categories = await _taxonomyService.GetCategoriesByAspectIdAsync(aspectId);
+        var dtos = categories.Select(c => c.ToResponseDto());
+        return Ok(ApiResponse<IEnumerable<CategoryResponseDto>>.Ok(dtos, $"Lấy danh sách Chuyên mục của Khía cạnh '{aspectId}' thành công."));
+    }
+
+    /// <summary>
+    /// Tạo mới một Chuyên mục (Category) trực thuộc một Khía cạnh cụ thể (Nested Resource).
+    /// </summary>
+    /// <param name="aspectId">Mã định danh của Khía cạnh cha.</param>
+    /// <param name="request">Dữ liệu tạo mới CategoryCreateDto.</param>
+    /// <returns>Chuyên mục vừa tạo dạng CategoryResponseDto.</returns>
+    /// <response code="201">Tạo Chuyên mục mới thành công.</response>
+    /// <response code="400">Dữ liệu đầu vào vi phạm validation.</response>
+    /// <response code="404">Không tìm thấy Khía cạnh cha tương ứng.</response>
+    [HttpPost("{aspectId:guid}/categories")]
+    [Authorize(Policy = AuthConstants.Policies.RequireHost)]
+    [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(
-        [FromBody] UserRegisterDto dto,
-        CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CategoryResponseDto>>> CreateCategoryForAspect(
+        [FromRoute] Guid aspectId,
+        [FromBody] CategoryCreateDto request)
     {
-        try
+        var createRequest = new CreateCategoryRequest
         {
-            var result = await _authService.RegisterAsync(dto, cancellationToken);
-            return CreatedAtAction(
-                nameof(GetCurrentUser),
-                null,
-                ApiResponse<AuthResponseDto>.Ok(result, "Đăng ký tài khoản và cấp JWT thành công."));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(CreateProblemDetails(
-                StatusCodes.Status409Conflict,
-                "Xung đột dữ liệu tài khoản",
-                ex.Message));
-        }
-    }
+            Title = request.Title,
+            Slug = request.Slug,
+            Description = request.Description,
+            OrderIndex = request.OrderIndex
+        };
 
-    /// <summary>
-    /// Đăng nhập vào hệ sinh thái bằng Username hoặc Email để nhận JWT Access Token và Refresh Token.
-    /// </summary>
-    [HttpPost("login")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login(
-        [FromBody] LoginRequestDto dto,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await _authService.LoginAsync(dto, cancellationToken);
-        if (result == null)
-        {
-            return Unauthorized(CreateProblemDetails(
-                StatusCodes.Status401Unauthorized,
-                "Xác thực thất bại",
-                "Tên đăng nhập hoặc mật khẩu không chính xác."));
-        }
-
-        return Ok(ApiResponse<AuthResponseDto>.Ok(result, "Đăng nhập thành công."));
-    }
-
-    /// <summary>
-    /// Làm mới JWT Access Token bằng Refresh Token (tự động Rotate &amp; phát hiện Reuse Attack).
-    /// </summary>
-    [HttpPost("refresh")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> RefreshToken(
-        [FromBody] RefreshTokenRequestDto dto,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await _authService.RefreshTokenAsync(dto.RefreshToken, cancellationToken);
-        if (result == null)
-        {
-            return Unauthorized(CreateProblemDetails(
-                StatusCodes.Status401Unauthorized,
-                "Refresh Token không hợp lệ",
-                "Refresh Token không hợp lệ, đã hết hạn hoặc đã bị thu hồi."));
-        }
-
-        return Ok(ApiResponse<AuthResponseDto>.Ok(result, "Làm mới JWT Token thành công."));
-    }
-
-    /// <summary>
-    /// Đăng xuất phiên hiện tại và thu hồi hiệu lực Refresh Token (yêu cầu JWT Bearer Token).
-    /// </summary>
-    [HttpPost("logout")]
-    [Authorize]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Logout(
-        [FromBody] LogoutRequestDto dto,
-        CancellationToken cancellationToken = default)
-    {
-        var revoked = await _authService.LogoutAsync(dto.RefreshToken, cancellationToken);
-        return Ok(ApiResponse<object>.Ok(
-            new { revoked },
-            revoked ? "Đăng xuất và thu hồi Refresh Token thành công." : "Refresh Token đã được thu hồi trước đó hoặc không tồn tại."));
+        var created = await _taxonomyService.CreateCategoryAsync(aspectId, createRequest);
+        return CreatedAtAction(
+            actionName: "GetById",
+            controllerName: "Categories",
+            routeValues: new { id = created.Id },
+            value: ApiResponse<CategoryResponseDto>.Ok(created.ToResponseDto(), "Tạo Chuyên mục mới trực thuộc Khía cạnh thành công."));
     }
 
     /// <summary>
