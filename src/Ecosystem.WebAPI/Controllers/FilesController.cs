@@ -8,152 +8,113 @@ using Microsoft.AspNetCore.Mvc;
 namespace Ecosystem.WebAPI.Controllers;
 
 /// <summary>
-/// Quản lý RESTful Upload, Download và Xóa tệp đính kèm với Validation đa tầng &amp; Options Pattern (Buổi 10).
+/// Quản lý và kiểm chứng cấu hình ứng dụng theo Environment (Development vs Production)
+/// và Options Pattern: IOptions&lt;T&gt;, IOptionsSnapshot&lt;T&gt;, IOptionsMonitor&lt;T&gt; (Buổi 10).
 /// </summary>
 [ApiController]
-[Route("api/v1/files")]
+[Route("api/v1/config")]
 [Produces("application/json")]
-public class FilesController : ControllerBase
+public class ConfigController : ControllerBase
 {
-    private readonly IFileStorageService _fileStorageService;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
+    private readonly IOptions<FileStorageOptions> _singletonFileOptions;
+    private readonly IOptionsSnapshot<FileStorageOptions> _snapshotFileOptions;
+    private readonly IOptionsSnapshot<EcosystemFeaturesOptions> _snapshotFeatureOptions;
+    private readonly IOptionsMonitor<EcosystemFeaturesOptions> _monitorFeatureOptions;
 
-    public FilesController(IFileStorageService fileStorageService)
+    public ConfigController(
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
+        IOptions<FileStorageOptions> singletonFileOptions,
+        IOptionsSnapshot<FileStorageOptions> snapshotFileOptions,
+        IOptionsSnapshot<EcosystemFeaturesOptions> snapshotFeatureOptions,
+        IOptionsMonitor<EcosystemFeaturesOptions> monitorFeatureOptions)
     {
-        _fileStorageService = fileStorageService;
+        _environment = environment;
+        _configuration = configuration;
+        _singletonFileOptions = singletonFileOptions;
+        _snapshotFileOptions = snapshotFileOptions;
+        _snapshotFeatureOptions = snapshotFeatureOptions;
+        _monitorFeatureOptions = monitorFeatureOptions;
     }
 
     /// <summary>
-    /// Lấy cấu hình giới hạn kích thước và định dạng tệp được phép tải lên từ FileStorageOptions.
+    /// Xem thông tin môi trường chạy hiện tại (Development / Staging / Production) và Feature Flags an toàn.
+    /// Không làm lộ Secret Keys, Password hoặc đường dẫn vật lý trên Server.
     /// </summary>
-    [HttpGet("limits")]
+    [HttpGet("environment")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<FileLimitsDto>), StatusCodes.Status200OK)]
-    public ActionResult<ApiResponse<FileLimitsDto>> GetLimits()
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public IActionResult GetEnvironmentInfo()
     {
-        var limits = _fileStorageService.GetLimits();
-        return Ok(ApiResponse<FileLimitsDto>.Ok(limits, "Lấy thông tin cấu hình giới hạn tải tệp thành công."));
+        var features = _snapshotFeatureOptions.Value;
+
+        var payload = new
+        {
+            environmentName = _environment.EnvironmentName,
+            applicationName = _environment.ApplicationName,
+            isDevelopment = _environment.IsDevelopment(),
+            isStaging = _environment.IsStaging(),
+            isProduction = _environment.IsProduction(),
+            features = new
+            {
+                features.ApplicationTitle,
+                features.EnvironmentBanner,
+                features.EnableSwagger,
+                features.EnableDetailedErrors,
+                features.EnableAutoMigration,
+                features.ConfigVersion,
+                features.DefaultPageSize
+            }
+        };
+
+        return Ok(ApiResponse<object>.Ok(payload, "Lấy thông tin môi trường ứng dụng thành công."));
     }
 
     /// <summary>
-    /// Tải lên một tệp đính kèm (hình ảnh, PDF hoặc Markdown &lt;= 5MB) qua multipart/form-data.
-    /// Kiểm tra kích thước, whitelist phần mở rộng, MIME Content-Type và chữ ký Magic Bytes.
+    /// So sánh trực tiếp 3 biến thể Options Pattern (IOptions, IOptionsSnapshot, IOptionsMonitor)
+    /// và kiểm tra cấu hình môi trường dành riêng cho Host.
     /// </summary>
-    [HttpPost("upload")]
-    [Authorize]
-    [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(ApiResponse<FileUploadResultDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [HttpGet("options")]
+    [Authorize(Roles = AuthConstants.Roles.Host)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ApiResponse<FileUploadResultDto>>> Upload(
-        IFormFile? file,
-        CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public IActionResult GetOptionsComparison()
     {
-        if (file == null)
-        {
-            return BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Thiếu tệp tải lên",
-                "Vui lòng chọn một tệp trong trường 'file' (multipart/form-data)."));
-        }
+        var rawConnection = _configuration.GetConnectionString("DefaultConnection");
+        var provider = _configuration["DatabaseProvider"] ?? "Sqlite";
 
-        if (file.Length == 0)
+        var payload = new
         {
-            return BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Tệp rỗng",
-                "Tệp được chọn có dung lượng 0 bytes, vui lòng chọn tệp hợp lệ."));
-        }
-
-        try
-        {
-            await using var stream = file.OpenReadStream();
-            var input = new FileUploadInput
+            environmentName = _environment.EnvironmentName,
+            databaseProvider = provider,
+            maskedConnectionString = MaskConnectionString(rawConnection),
+            contentRootPath = _environment.ContentRootPath,
+            webRootPath = _environment.WebRootPath,
+            optionsPatternComparison = new
             {
-                Content = stream,
-                OriginalFileName = file.FileName,
-                ContentType = file.ContentType ?? "application/octet-stream",
-                Length = file.Length
-            };
-
-            var uploaded = await _fileStorageService.UploadAsync(input, cancellationToken);
-            return CreatedAtAction(
-                nameof(Download),
-                new { fileName = uploaded.StoredFileName },
-                ApiResponse<FileUploadResultDto>.Ok(uploaded, "Tải tệp đính kèm lên hệ thống thành công."));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Tệp tải lên không hợp lệ",
-                ex.Message));
-        }
-    }
-
-    /// <summary>
-    /// Tải lên nhiều tệp đính kèm cùng lúc (trả về kết quả từng tệp hợp lệ và danh sách lỗi nếu có).
-    /// </summary>
-    [HttpPost("upload-multiple")]
-    [Authorize]
-    [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(ApiResponse<MultiFileUploadResultDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<ApiResponse<MultiFileUploadResultDto>>> UploadMultiple(
-        List<IFormFile>? files,
-        CancellationToken cancellationToken = default)
-    {
-        if (files == null || files.Count == 0)
-        {
-            return BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Thiếu danh sách tệp",
-                "Vui lòng chọn ít nhất một tệp trong trường 'files' (multipart/form-data)."));
-        }
-
-        var inputs = new List<FileUploadInput>(files.Count);
-        try
-        {
-            foreach (var file in files)
-            {
-                inputs.Add(new FileUploadInput
+                iOptionsSingleton = new
                 {
-                    Content = file.OpenReadStream(),
-                    OriginalFileName = file.FileName,
-                    ContentType = file.ContentType ?? "application/octet-stream",
-                    Length = file.Length
-                });
+                    lifetime = "Singleton (đọc một lần lúc khởi động)",
+                    value = _singletonFileOptions.Value
+                },
+                iOptionsSnapshotScoped = new
+                {
+                    lifetime = "Scoped (tự động đọc lại cấu hình mới trên từng HTTP request)",
+                    value = _snapshotFileOptions.Value
+                },
+                iOptionsMonitorSingleton = new
+                {
+                    lifetime = "Singleton + OnChange (CurrentValue luôn đồng bộ thay đổi cấu hình)",
+                    currentValue = _monitorFeatureOptions.CurrentValue
+                }
             }
+        };
 
-            var result = await _fileStorageService.UploadMultipleAsync(inputs, cancellationToken);
-            if (result.SuccessCount == 0 && result.ErrorCount > 0)
-            {
-                var problem = CreateProblemDetails(
-                    StatusCodes.Status400BadRequest,
-                    "Tất cả tệp tải lên đều không hợp lệ",
-                    string.Join(" | ", result.Errors.Select(e => $"{e.OriginalFileName}: {e.Reason}")));
-                problem.Extensions["errors"] = result.Errors;
-                return BadRequest(problem);
-            }
-
-            return Ok(ApiResponse<MultiFileUploadResultDto>.Ok(
-                result,
-                $"Đã tải lên thành công {result.SuccessCount}/{inputs.Count} tệp."));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Yêu cầu tải nhiều tệp không hợp lệ",
-                ex.Message));
-        }
-        finally
-        {
-            foreach (var input in inputs)
-            {
-                await input.Content.DisposeAsync();
-            }
-        }
+        return Ok(ApiResponse<object>.Ok(payload, "Truy xuất báo cáo so sánh Options Pattern thành công."));
+    }
     }
 
     /// <summary>
