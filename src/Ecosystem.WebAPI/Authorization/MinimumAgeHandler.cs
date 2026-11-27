@@ -1,52 +1,38 @@
-using System.Globalization;
 using System.Security.Claims;
+using Ecosystem.Application.Common;
+using Ecosystem.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Ecosystem.WebAPI.Authorization;
 
 /// <summary>
-/// AuthorizationHandler xử lý MinimumAgeRequirement, tính chính xác tuổi kể cả trường hợp chưa qua ngày sinh nhật trong năm.
+/// Resource-based AuthorizationHandler kiểm tra quyền sở hữu bài viết:
+/// - Host có toàn quyền chỉnh sửa/xóa mọi bài viết.
+/// - Presenter chỉ được chỉnh sửa/xóa bài viết do chính mình tạo ra (AuthorId == currentUserId).
 /// </summary>
-public class MinimumAgeHandler : AuthorizationHandler<MinimumAgeRequirement>
+public class ArticleOwnerOrHostHandler
+    : AuthorizationHandler<ArticleOwnerOrHostRequirement, ArticleDetailResponseDto>
 {
-    private readonly Func<DateTime> _todayProvider;
-
-    public MinimumAgeHandler() : this(() => DateTime.UtcNow.Date)
-    {
-    }
-
-    public MinimumAgeHandler(Func<DateTime> todayProvider)
-    {
-        _todayProvider = todayProvider;
-    }
-
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
-        MinimumAgeRequirement requirement)
+        ArticleOwnerOrHostRequirement requirement,
+        ArticleDetailResponseDto resource)
     {
-        var dobClaim = context.User.FindFirst(ClaimTypes.DateOfBirth);
-        if (dobClaim == null || string.IsNullOrWhiteSpace(dobClaim.Value))
+        if (context.User.Identity?.IsAuthenticated != true)
         {
             return Task.CompletedTask;
         }
 
-        if (!DateTime.TryParse(
-                dobClaim.Value,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out var dob))
+        if (context.User.IsInRole(AuthConstants.Roles.Host))
         {
+            context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
-        var today = _todayProvider().Date;
-        var age = today.Year - dob.Year;
-        if (dob.Date > today.AddYears(-age))
-        {
-            age--;
-        }
+        var userIdClaim = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? context.User.FindFirstValue("sub");
 
-        if (age >= requirement.MinimumAge)
+        if (Guid.TryParse(userIdClaim, out var currentUserId) && resource.AuthorId == currentUserId)
         {
             context.Succeed(requirement);
         }
