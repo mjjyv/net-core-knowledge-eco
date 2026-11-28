@@ -2,7 +2,9 @@ using System.Text.Json;
 using Ecosystem.Domain.Exceptions;
 using Ecosystem.WebAPI.Middleware;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Ecosystem.UnitTests.WebAPI;
@@ -105,5 +107,37 @@ public class GlobalExceptionMiddlewareTests
 
         Assert.Equal(500, doc.RootElement.GetProperty("status").GetInt32());
         Assert.Equal("Lỗi máy chủ nội bộ", doc.RootElement.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenProductionAndUnhandledException_HidesInternalMessageAndIncludesRequestId()
+    {
+        // Arrange
+        var envMock = new Mock<IHostEnvironment>();
+        envMock.Setup(e => e.EnvironmentName).Returns(Environments.Production);
+
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+        context.Request.Headers["X-Request-Id"] = "req-prod-001";
+
+        RequestDelegate next = _ => throw new InvalidOperationException("Database connection string password=secret");
+        var middleware = new GlobalExceptionMiddleware(next, _logger, envMock.Object);
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        Assert.Equal(500, context.Response.StatusCode);
+        Assert.Equal("req-prod-001", context.Response.Headers["X-Request-Id"].ToString());
+
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var json = await reader.ReadToEndAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        var detail = doc.RootElement.GetProperty("detail").GetString()!;
+        Assert.DoesNotContain("password=secret", detail);
+        Assert.Equal("req-prod-001", doc.RootElement.GetProperty("traceId").GetString());
+        Assert.Equal("req-prod-001", doc.RootElement.GetProperty("requestId").GetString());
     }
 }

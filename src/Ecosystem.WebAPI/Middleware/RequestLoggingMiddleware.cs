@@ -1,9 +1,7 @@
-using System.Diagnostics;
-
 namespace Ecosystem.WebAPI.Middleware;
 
 /// <summary>
-/// Middleware ghi log giám sát luồng HTTP request và đo lường thời gian đáp ứng (Latency).
+/// Middleware thiết lập Structured Logging Scope gắn RequestId/Method/Path cho toàn bộ vòng đời HTTP Request (Buổi 12).
 /// </summary>
 public class RequestLoggingMiddleware
 {
@@ -18,32 +16,35 @@ public class RequestLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var stopwatch = Stopwatch.StartNew();
+        var requestId = RequestIdHelper.EnsureRequestId(context);
         var requestMethod = context.Request.Method;
-        var requestPath = context.Request.Path;
+        var requestPath = context.Request.Path.Value ?? "/";
 
-        _logger.LogInformation("HTTP Request: {Method} {Path}", requestMethod, requestPath);
-
-        context.Response.OnStarting(() =>
+        using var scope = _logger.BeginScope(new Dictionary<string, object>
         {
-            stopwatch.Stop();
-            var elapsedMs = stopwatch.ElapsedMilliseconds;
-            context.Response.Headers["X-Response-Time-Ms"] = elapsedMs.ToString();
-            return Task.CompletedTask;
+            ["RequestId"] = requestId,
+            ["RequestMethod"] = requestMethod,
+            ["RequestPath"] = requestPath
         });
 
-        await _next(context);
-
-        if (!stopwatch.IsRunning)
-        {
-            stopwatch.Stop();
-        }
-
         _logger.LogInformation(
-            "HTTP Response: {Method} {Path} -> {StatusCode} in {Elapsed}ms",
+            "HTTP Request started: {RequestId} {Method} {Path}",
+            requestId,
             requestMethod,
-            requestPath,
-            context.Response.StatusCode,
-            stopwatch.ElapsedMilliseconds);
+            requestPath);
+
+        try
+        {
+            await _next(context);
+        }
+        finally
+        {
+            _logger.LogInformation(
+                "HTTP Response completed: {RequestId} {Method} {Path} -> {StatusCode}",
+                requestId,
+                requestMethod,
+                requestPath,
+                context.Response.StatusCode);
+        }
     }
 }

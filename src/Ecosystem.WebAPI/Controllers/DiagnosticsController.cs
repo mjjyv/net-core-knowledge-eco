@@ -97,6 +97,25 @@ public class DiagnosticsController : ControllerBase
     }
 
     /// <summary>
+    /// Endpoint mô phỏng tác vụ xử lý chậm để kiểm chứng RequestTimingMiddleware phát cảnh báo LogWarning và gắn Header X-Response-Time-Ms.
+    /// </summary>
+    [HttpGet("slow-demo")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SimulateSlowRequestAsync(
+        [FromQuery] int delayMs = 600,
+        CancellationToken cancellationToken = default)
+    {
+        var safeDelayMs = Math.Clamp(delayMs, 0, 3000);
+        await Task.Delay(safeDelayMs, cancellationToken);
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            simulatedDelayMs = safeDelayMs,
+            traceId = HttpContext?.TraceIdentifier
+        }, $"Hoàn tất mô phỏng độ trễ {safeDelayMs}ms."));
+    }
+
+    /// <summary>
     /// Kiểm thử Custom Validation Attribute [MustBeEven] (Bài tập 4 - Buổi 4).
     /// </summary>
     /// <param name="dto">Đối tượng kiểm thử chứa trường Value bắt buộc phải là số chẵn.</param>

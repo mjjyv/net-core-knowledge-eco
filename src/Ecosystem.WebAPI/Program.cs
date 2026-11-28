@@ -65,7 +65,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 11: Advanced Querying: Pagination, Filtering & Sorting",
+    phase = "Phase 12: Global Exception Handling & Structured Logging",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")))

@@ -8,15 +8,18 @@ namespace Ecosystem.WebAPI.Extensions;
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
-    /// Kích hoạt các Middleware tùy biến theo đúng thứ tự: Bắt lỗi tập trung -> Ghi log thời gian.
+    /// Kích hoạt các Middleware tùy biến theo đúng thứ tự: Bắt lỗi tập trung -&gt; Structured Request Logging -&gt; Đo thời gian &amp; cảnh báo chậm.
     /// </summary>
     public static IApplicationBuilder UseCustomMiddlewares(this IApplicationBuilder app)
     {
         // 1. Bắt ngoại lệ tập trung (ở đầu pipeline để bảo vệ mọi middleware tiếp theo)
         app.UseMiddleware<GlobalExceptionMiddleware>();
 
-        // 2. Ghi log request và đo lường thời gian đáp ứng
+        // 2. Thiết lập RequestId Scope và ghi Structured Log cho Request/Response
         app.UseMiddleware<RequestLoggingMiddleware>();
+
+        // 3. Đo thời gian đáp ứng (try-finally) và cảnh báo LogWarning khi vượt ngưỡng
+        app.UseMiddleware<RequestTimingMiddleware>();
 
         return app;
     }
