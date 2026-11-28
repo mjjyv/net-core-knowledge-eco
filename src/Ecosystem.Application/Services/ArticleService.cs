@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
@@ -275,10 +276,58 @@ public class ArticleService : IArticleService
         }
     }
 
+    private static readonly Regex AttachmentLinkRegex = new(
+        @"(?:/api/v1/files/|/uploads/)([A-Za-z0-9._-]+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     /// <inheritdoc />
     public async Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null, CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.Articles.SlugExistsAsync(slug, excludeId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ArticleBundleDto?> GetBundleByIdAsync(
+        Guid id,
+        string? baseUrl = null,
+        CancellationToken cancellationToken = default)
+    {
+        var article = await _unitOfWork.Articles.GetByIdWithHierarchyAsync(id, asNoTracking: true, cancellationToken);
+        if (article == null)
+        {
+            return null;
+        }
+
+        var topicSlug = article.Category?.Aspect?.Topic?.Slug ?? "general";
+        var aspectSlug = article.Category?.Aspect?.Slug ?? "general";
+        var categorySlug = article.Category?.Slug ?? "general";
+        var normalizedBase = string.IsNullOrWhiteSpace(baseUrl) ? string.Empty : baseUrl.TrimEnd('/');
+
+        var markdown = article.MarkdownContent ?? string.Empty;
+        var attachments = AttachmentLinkRegex.Matches(markdown)
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(fileName => new ArticleAttachmentLinkDto
+            {
+                FileName = fileName,
+                DownloadUrl = string.IsNullOrEmpty(normalizedBase)
+                    ? $"/api/v1/files/{fileName}"
+                    : $"{normalizedBase}/api/v1/files/{fileName}"
+            })
+            .ToList();
+
+        return new ArticleBundleDto
+        {
+            ArticleId = article.Id,
+            Title = article.Title,
+            Slug = article.Slug,
+            MarkdownContent = markdown,
+            CategoryPath = $"{topicSlug}/{aspectSlug}/{categorySlug}",
+            DeepLink = $"ecosystem://article/{article.Slug}",
+            Tags = ArticleMappingExtensions.ParseTags(article.TagsJson),
+            Attachments = attachments,
+            ExportedAt = DateTime.UtcNow
+        };
     }
 
     private static int CalculateReadingTime(int? providedMinutes, string content)

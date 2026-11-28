@@ -6,6 +6,8 @@ using Ecosystem.Application.Interfaces;
 using Ecosystem.Application.Mappings;
 using Ecosystem.Application.Services;
 using Ecosystem.WebAPI.Authorization;
+using Ecosystem.WebAPI.Hubs;
+using Ecosystem.WebAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
@@ -137,6 +139,17 @@ public static class ServiceCollectionExtensions
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    },
                     OnChallenge = async context =>
                     {
                         if (context.Response.HasStarted)
@@ -342,6 +355,18 @@ public static class ServiceCollectionExtensions
         {
             options.EnableForHttps = true;
         });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký SignalR Hubs, bộ theo dõi hiện diện phòng học và dịch vụ nền Eviction Policy 30s (Buổi 14).
+    /// </summary>
+    public static IServiceCollection AddRealtimeServices(this IServiceCollection services)
+    {
+        services.AddSignalR();
+        services.AddSingleton<IClassroomPresenceTracker, ClassroomPresenceTracker>();
+        services.AddHostedService<ClassroomHeartbeatMonitorService>();
 
         return services;
     }

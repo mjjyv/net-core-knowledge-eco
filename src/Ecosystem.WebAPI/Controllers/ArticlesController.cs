@@ -120,6 +120,35 @@ public class ArticlesController : ControllerBase
     }
 
     /// <summary>
+    /// Xuất bản gói dữ liệu tự chứa ecosystem://bundle phục vụ đồng bộ Desktop PKM (Phase 14).
+    /// </summary>
+    /// <param name="id">Mã định danh GUID của bài viết.</param>
+    /// <param name="cancellationToken">Token hủy bất đồng bộ.</param>
+    /// <returns>Gói dữ liệu ArticleBundleDto gồm Markdown, CategoryPath, Tags và Attachments.</returns>
+    /// <response code="200">Xuất bản gói đồng bộ thành công.</response>
+    /// <response code="404">Không tìm thấy bài viết với Id tương ứng.</response>
+    [HttpGet("{id:guid}/bundle")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<ArticleBundleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<ArticleBundleDto>>> GetBundle(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var baseUrl = Request != null ? $"{Request.Scheme}://{Request.Host}" : null;
+        var bundle = await _articleService.GetBundleByIdAsync(id, baseUrl, cancellationToken);
+        if (bundle == null)
+        {
+            return NotFound(CreateProblemDetails(
+                StatusCodes.Status404NotFound,
+                "Không tìm thấy bài viết",
+                $"Không tìm thấy bài viết với mã định danh '{id}' để xuất bản gói bundle."));
+        }
+
+        return Ok(ApiResponse<ArticleBundleDto>.Ok(bundle, "Xuất bản gói dữ liệu ecosystem://bundle thành công."));
+    }
+
+    /// <summary>
     /// Tạo mới một bài viết tri thức Markdown trong hệ sinh thái.
     /// Tự động sinh slug chuẩn SEO từ tiêu đề nếu không truyền và kiểm tra tính duy nhất.
     /// </summary>

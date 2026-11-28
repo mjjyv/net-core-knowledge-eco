@@ -4,6 +4,7 @@ using Ecosystem.Infrastructure.Data;
 using Ecosystem.Infrastructure.Data.Seed;
 using Ecosystem.Infrastructure.Extensions;
 using Ecosystem.WebAPI.Extensions;
+using Ecosystem.WebAPI.Hubs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -19,6 +20,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddLifetimeDemonstrationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddRealtimeServices();
 
 var app = builder.Build();
 
@@ -67,15 +69,17 @@ app.UseCors(CorsOptions.PolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 3. Map Endpoints & Controllers
+// 3. Map Endpoints, Controllers & SignalR Hubs
 app.MapControllers();
+app.MapHub<CollaborationHub>("/hubs/collaboration");
+app.MapHub<ClassroomHub>("/hubs/classroom");
 
 // Endpoint kiểm tra sức khỏe hệ thống (Health Check)
 app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 13: Swagger Nâng Cao, CORS & Đóng Gói Docker",
+    phase = "Phase 14: Tích Hợp Hệ Thống & Realtime SignalR Hub",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")))

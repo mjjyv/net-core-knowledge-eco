@@ -224,3 +224,28 @@ public class ArticleFilterQuery : PaginationParams
     /// </summary>
     public ArticleStatus? Status { get; set; }
 }
+
+/// <summary>
+/// Liên kết tệp đính kèm được trích xuất trong gói đồng bộ ecosystem://bundle.
+/// </summary>
+public class ArticleAttachmentLinkDto
+{
+    public string FileName { get; set; } = string.Empty;
+    public string DownloadUrl { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Gói dữ liệu tri thức tự chứa phục vụ đồng bộ liên thông sâu (ecosystem://bundle - Phase 14).
+/// </summary>
+public class ArticleBundleDto
+{
+    public Guid ArticleId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string MarkdownContent { get; set; } = string.Empty;
+    public string CategoryPath { get; set; } = string.Empty;
+    public string DeepLink { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
+    public List<ArticleAttachmentLinkDto> Attachments { get; set; } = new();
+    public DateTime ExportedAt { get; set; } = DateTime.UtcNow;
+}

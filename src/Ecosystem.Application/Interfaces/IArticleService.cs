@@ -52,4 +52,9 @@ public interface IArticleService
     /// Kiểm tra xem một Slug đã tồn tại trong CSDL hay chưa.
     /// </summary>
     Task<bool> SlugExistsAsync(string slug, Guid? excludeId = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Xuất bản gói dữ liệu tự chứa ecosystem://bundle (Markdown, cây phân cấp, tags và tệp đính kèm).
+    /// </summary>
+    Task<ArticleBundleDto?> GetBundleByIdAsync(Guid id, string? baseUrl = null, CancellationToken cancellationToken = default);
 }
