@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Ecosystem.Application.Common;
 using Ecosystem.Application.Validation;
 using Ecosystem.Domain.Enums;
 
@@ -194,9 +195,9 @@ public class ArticleDetailResponseDto : ArticleResponseDto
 }
 
 /// <summary>
-/// Query parameters lọc, tìm kiếm và sắp xếp danh sách bài viết.
+/// Query parameters phân trang, lọc, tìm kiếm và sắp xếp danh sách bài viết (kế thừa PaginationParams).
 /// </summary>
-public class ArticleFilterQuery
+public class ArticleFilterQuery : PaginationParams
 {
     /// <summary>
     /// Lọc theo chuyên mục cấp 3 (Category).
@@ -222,19 +223,4 @@ public class ArticleFilterQuery
     /// Lọc theo trạng thái xuất bản (Draft = 0, Published = 1, Archived = 2).
     /// </summary>
     public ArticleStatus? Status { get; set; }
-
-    /// <summary>
-    /// Từ khóa tìm kiếm trong tiêu đề hoặc tóm tắt.
-    /// </summary>
-    public string? SearchTerm { get; set; }
-
-    /// <summary>
-    /// Trường sắp xếp ("title", "createdAt", "views", "readingTime"). Mặc định theo "createdAt".
-    /// </summary>
-    public string? SortBy { get; set; }
-
-    /// <summary>
-    /// Thứ tự sắp xếp giảm dần (mặc định: true - bài viết mới nhất lên đầu).
-    /// </summary>
-    public bool IsDescending { get; set; } = true;
 }

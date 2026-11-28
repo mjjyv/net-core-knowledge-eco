@@ -1,3 +1,4 @@
+using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 
 namespace Ecosystem.Application.Interfaces;
@@ -11,6 +12,11 @@ public interface IArticleService
     /// Lấy danh sách bài viết hỗ trợ lọc, tìm kiếm và sắp xếp. Dùng AsNoTracking và projection DTO.
     /// </summary>
     Task<IEnumerable<ArticleResponseDto>> GetAllAsync(ArticleFilterQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy danh sách bài viết có phân trang (Skip/Take), lọc, tìm kiếm và sắp xếp động kèm metadata PagedResult.
+    /// </summary>
+    Task<PagedResult<ArticleResponseDto>> GetPagedAsync(ArticleFilterQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Lấy chi tiết bài viết theo GUID (kèm breadcrumbs phân cấp 4 tầng Topic -> Aspect -> Category -> Article).

@@ -69,10 +69,11 @@ public class ArticlesControllerTests : IDisposable
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<ApiResponse<IEnumerable<ArticleResponseDto>>>(okResult.Value);
+        var response = Assert.IsType<ApiResponse<PagedResult<ArticleResponseDto>>>(okResult.Value);
         Assert.True(response.Success);
         Assert.NotNull(response.Data);
-        Assert.Equal(2, response.Data.Count());
+        Assert.Equal(6, response.Data.TotalCount);
+        Assert.Equal(6, response.Data.Items.Count);
     }
 
     [Fact]

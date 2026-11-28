@@ -178,10 +178,51 @@ public class ArticleServiceTests : IDisposable
         Assert.Single(searchResults);
         Assert.Equal("EF Core Performance Tips", searchResults[0].Title);
 
-        // Act: Filter by Status = Published
+        // Act: Filter by Status = Published (4 seeded Published articles: 1, 2, 3, 5)
         var published = (await service.GetAllAsync(new ArticleFilterQuery { Status = ArticleStatus.Published })).ToList();
-        Assert.Equal(2, published.Count);
+        Assert.Equal(4, published.Count);
         Assert.Contains(published, a => a.Id == SeededArticleId);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_AppliesSkipTakeFilteringSearchingAndWhitelistSorting()
+    {
+        // Arrange
+        await using var context = new ApplicationDbContext(_options);
+        var service = CreateService(context);
+
+        // Act 1: Page 2 with PageSize = 2, sorted by ViewCount DESC
+        var page2 = await service.GetPagedAsync(new ArticleFilterQuery
+        {
+            PageNumber = 2,
+            PageSize = 2,
+            SortBy = "viewCount",
+            IsDescending = true
+        });
+
+        // Assert 1: Seeded ViewCounts DESC = [512, 340, 210, 128, 85, 45] -> Page 2 is [210, 128]
+        Assert.Equal(6, page2.TotalCount);
+        Assert.Equal(3, page2.TotalPages);
+        Assert.True(page2.HasPreviousPage);
+        Assert.True(page2.HasNextPage);
+        Assert.Equal(2, page2.Items.Count);
+        Assert.Equal(210, page2.Items[0].ViewCount);
+        Assert.Equal(128, page2.Items[1].ViewCount);
+
+        // Act 2: Search in Summary ("AsNoTracking") + Filter Status = Published
+        var filtered = await service.GetPagedAsync(new ArticleFilterQuery
+        {
+            Status = ArticleStatus.Published,
+            SearchTerm = "AsNoTracking",
+            SortBy = "title",
+            IsDescending = false
+        });
+
+        // Assert 2: Matches article2 & article3
+        Assert.Equal(2, filtered.TotalCount);
+        Assert.Equal(1, filtered.TotalPages);
+        Assert.Equal(2, filtered.Items.Count);
+        Assert.True(string.Compare(filtered.Items[0].Title, filtered.Items[1].Title, StringComparison.Ordinal) <= 0);
     }
 
     [Fact]

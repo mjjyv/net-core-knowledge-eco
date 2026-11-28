@@ -78,6 +78,57 @@ public class ArticleServiceMoqTests
     }
 
     [Fact]
+    public async Task GetPagedAsync_DelegatesToRepositoryAndReturnsPagedResult()
+    {
+        // Arrange
+        var categoryId = Guid.NewGuid();
+        var fakeArticles = new List<Article>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                CategoryId = categoryId,
+                Category = new Category { Id = categoryId, Title = "EF Core", Slug = "ef-core" },
+                Author = new User { Username = "presenter", FullName = "Giảng Viên" },
+                Title = "Bài viết phân trang",
+                Slug = "bai-viet-phan-trang",
+                Status = ArticleStatus.Published,
+                ViewCount = 99
+            }
+        };
+
+        _mockArticleRepo
+            .Setup(r => r.GetPagedAsync(
+                categoryId, null, null, null, ArticleStatus.Published, "phân trang", "viewCount", true, 2, 5,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((fakeArticles, 11));
+
+        var query = new ArticleFilterQuery
+        {
+            CategoryId = categoryId,
+            Status = ArticleStatus.Published,
+            SearchTerm = "phân trang",
+            SortBy = "viewCount",
+            IsDescending = true,
+            PageNumber = 2,
+            PageSize = 5
+        };
+
+        // Act
+        var result = await _service.GetPagedAsync(query);
+
+        // Assert
+        Assert.Equal(11, result.TotalCount);
+        Assert.Equal(2, result.PageNumber);
+        Assert.Equal(5, result.PageSize);
+        Assert.Equal(3, result.TotalPages);
+        Assert.True(result.HasPreviousPage);
+        Assert.True(result.HasNextPage);
+        Assert.Single(result.Items);
+        Assert.Equal(99, result.Items[0].ViewCount);
+    }
+
+    [Fact]
     public async Task CreateAsync_ValidRequest_AddsToRepoAndCallsSaveChangesOnce()
     {
         // Arrange

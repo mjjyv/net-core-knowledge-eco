@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Ecosystem.Application.Common;
 using Ecosystem.Application.DTOs;
 using Ecosystem.Application.Interfaces;
@@ -29,21 +30,37 @@ public class ArticlesController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách các bài viết tri thức, hỗ trợ lọc đa chiều, tìm kiếm từ khóa và sắp xếp.
+    /// Lấy danh sách các bài viết tri thức có phân trang (Skip/Take), lọc đa chiều, tìm kiếm từ khóa và sắp xếp động.
     /// </summary>
-    /// <param name="query">Tham số lọc (CategoryId, AspectId, TopicId, AuthorId, Status, SearchTerm, SortBy, IsDescending).</param>
+    /// <param name="query">Tham số truy vấn (PageNumber, PageSize, CategoryId, AspectId, TopicId, AuthorId, Status, SearchTerm, SortBy, IsDescending).</param>
     /// <param name="cancellationToken">Token hủy bất đồng bộ.</param>
-    /// <returns>Danh sách tóm lược các bài viết dạng ArticleResponseDto.</returns>
-    /// <response code="200">Lấy danh sách bài viết thành công.</response>
+    /// <returns>Kết quả phân trang PagedResult&lt;ArticleResponseDto&gt; kèm header X-Pagination.</returns>
+    /// <response code="200">Lấy danh sách bài viết phân trang thành công.</response>
     [HttpGet]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ArticleResponseDto>>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<ApiResponse<IEnumerable<ArticleResponseDto>>>> GetAll(
+    [ProducesResponseType(typeof(ApiResponse<PagedResult<ArticleResponseDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PagedResult<ArticleResponseDto>>>> GetAll(
         [FromQuery] ArticleFilterQuery query,
         CancellationToken cancellationToken = default)
     {
-        var articles = await _articleService.GetAllAsync(query, cancellationToken);
-        return Ok(ApiResponse<IEnumerable<ArticleResponseDto>>.Ok(articles, "Lấy danh sách bài viết thành công."));
+        var pagedResult = await _articleService.GetPagedAsync(query, cancellationToken);
+
+        if (Response != null)
+        {
+            var paginationHeader = JsonSerializer.Serialize(new
+            {
+                pagedResult.TotalCount,
+                pagedResult.PageSize,
+                pagedResult.PageNumber,
+                pagedResult.TotalPages,
+                pagedResult.HasPreviousPage,
+                pagedResult.HasNextPage
+            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+            Response.Headers["X-Pagination"] = paginationHeader;
+        }
+
+        return Ok(ApiResponse<PagedResult<ArticleResponseDto>>.Ok(pagedResult, "Lấy danh sách bài viết phân trang thành công."));
     }
 
     /// <summary>

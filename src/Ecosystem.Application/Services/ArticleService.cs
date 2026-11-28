@@ -48,6 +48,26 @@ public class ArticleService : IArticleService
     }
 
     /// <inheritdoc />
+    public async Task<PagedResult<ArticleResponseDto>> GetPagedAsync(ArticleFilterQuery query, CancellationToken cancellationToken = default)
+    {
+        var (items, totalCount) = await _unitOfWork.Articles.GetPagedAsync(
+            query.CategoryId,
+            query.AspectId,
+            query.TopicId,
+            query.AuthorId,
+            query.Status,
+            query.SearchTerm,
+            query.SortBy,
+            query.IsDescending,
+            query.PageNumber,
+            query.PageSize,
+            cancellationToken);
+
+        var dtos = _mapper.Map<IReadOnlyList<ArticleResponseDto>>(items);
+        return new PagedResult<ArticleResponseDto>(dtos, totalCount, query.PageNumber, query.PageSize);
+    }
+
+    /// <inheritdoc />
     public async Task<ArticleDetailResponseDto?> GetByIdAsync(Guid id, bool incrementView = false, CancellationToken cancellationToken = default)
     {
         if (incrementView)

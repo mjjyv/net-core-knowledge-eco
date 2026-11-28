@@ -26,6 +26,49 @@ public class ArticleRepository : GenericRepository<Article>, IArticleRepository
         bool isDescending = true,
         CancellationToken cancellationToken = default)
     {
+        var query = BuildFilteredQuery(categoryId, aspectId, topicId, authorId, status, searchTerm);
+        query = ApplySorting(query, sortBy, isDescending);
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IReadOnlyList<Article> Items, int TotalCount)> GetPagedAsync(
+        Guid? categoryId = null,
+        Guid? aspectId = null,
+        Guid? topicId = null,
+        Guid? authorId = null,
+        ArticleStatus? status = null,
+        string? searchTerm = null,
+        string? sortBy = null,
+        bool isDescending = true,
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var safePageNumber = Math.Max(1, pageNumber);
+        var safePageSize = Math.Clamp(pageSize, 1, 50);
+
+        // Thứ tự chuẩn Buổi 11: Filtering -> Searching -> CountAsync -> Sorting -> Skip/Take
+        var filteredQuery = BuildFilteredQuery(categoryId, aspectId, topicId, authorId, status, searchTerm);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+
+        var sortedQuery = ApplySorting(filteredQuery, sortBy, isDescending);
+        var items = await sortedQuery
+            .Skip((safePageNumber - 1) * safePageSize)
+            .Take(safePageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
+    private IQueryable<Article> BuildFilteredQuery(
+        Guid? categoryId,
+        Guid? aspectId,
+        Guid? topicId,
+        Guid? authorId,
+        ArticleStatus? status,
+        string? searchTerm)
+    {
         var query = _dbSet
             .AsNoTracking()
             .Include(a => a.Category)
@@ -63,15 +106,26 @@ public class ArticleRepository : GenericRepository<Article>, IArticleRepository
             query = query.Where(a => a.Title.ToLower().Contains(term) || a.Summary.ToLower().Contains(term));
         }
 
-        query = sortBy?.Trim().ToLowerInvariant() switch
-        {
-            "title" => isDescending ? query.OrderByDescending(a => a.Title) : query.OrderBy(a => a.Title),
-            "views" => isDescending ? query.OrderByDescending(a => a.ViewCount) : query.OrderBy(a => a.ViewCount),
-            "readingtime" => isDescending ? query.OrderByDescending(a => a.ReadingTimeMinutes) : query.OrderBy(a => a.ReadingTimeMinutes),
-            _ => isDescending ? query.OrderByDescending(a => a.CreatedAt) : query.OrderBy(a => a.CreatedAt)
-        };
+        return query;
+    }
 
-        return await query.ToListAsync(cancellationToken);
+    private static IQueryable<Article> ApplySorting(IQueryable<Article> query, string? sortBy, bool isDescending)
+    {
+        return sortBy?.Trim().ToLowerInvariant() switch
+        {
+            "title" => isDescending
+                ? query.OrderByDescending(a => a.Title).ThenBy(a => a.Id)
+                : query.OrderBy(a => a.Title).ThenBy(a => a.Id),
+            "viewcount" or "views" => isDescending
+                ? query.OrderByDescending(a => a.ViewCount).ThenBy(a => a.Id)
+                : query.OrderBy(a => a.ViewCount).ThenBy(a => a.Id),
+            "readingtime" => isDescending
+                ? query.OrderByDescending(a => a.ReadingTimeMinutes).ThenBy(a => a.Id)
+                : query.OrderBy(a => a.ReadingTimeMinutes).ThenBy(a => a.Id),
+            _ => isDescending
+                ? query.OrderByDescending(a => a.CreatedAt).ThenBy(a => a.Id)
+                : query.OrderBy(a => a.CreatedAt).ThenBy(a => a.Id)
+        };
     }
 
     public async Task<Article?> GetByIdWithHierarchyAsync(Guid id, bool asNoTracking = true, CancellationToken cancellationToken = default)

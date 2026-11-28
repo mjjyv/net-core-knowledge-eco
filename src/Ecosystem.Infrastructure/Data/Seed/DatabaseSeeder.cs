@@ -133,6 +133,8 @@ public static class DatabaseSeeder
                 CreatedAt = DateTime.UtcNow
             };
 
+            var baseTime = DateTime.UtcNow;
+
             var article1 = new Article
             {
                 Id = Guid.Parse("11111111-aaaa-c111-a001-111111111111"),
@@ -146,7 +148,7 @@ public static class DatabaseSeeder
                 ViewCount = 128,
                 ReadingTimeMinutes = 8,
                 TagsJson = "[\"dotnet8\", \"clean-architecture\", \"csharp\"]",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = baseTime.AddDays(-5)
             };
 
             var article2 = new Article
@@ -162,13 +164,77 @@ public static class DatabaseSeeder
                 ViewCount = 85,
                 ReadingTimeMinutes = 6,
                 TagsJson = "[\"ef-core\", \"linq\", \"ntier\"]",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = baseTime.AddDays(-4)
+            };
+
+            var article3 = new Article
+            {
+                Id = Guid.Parse("33333333-aaaa-c111-a003-333333333333"),
+                CategoryId = category2.Id,
+                AuthorId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Title = "Tối Ưu Pagination Với Skip, Take Và AsNoTracking Trong EF Core",
+                Slug = "toi-uu-pagination-voi-skip-take-va-asnotracking",
+                Summary = "Phân tích thứ tự Filtering, Searching, Sorting và phân trang cơ sở dữ liệu hiệu năng cao.",
+                MarkdownContent = "# Pagination Hiệu Năng Cao\n\nLuôn sắp xếp trước khi gọi Skip/Take và tắt ChangeTracker cho truy vấn chỉ đọc.",
+                Status = ArticleStatus.Published,
+                ViewCount = 340,
+                ReadingTimeMinutes = 7,
+                TagsJson = "[\"pagination\", \"ef-core\", \"performance\"]",
+                CreatedAt = baseTime.AddDays(-3)
+            };
+
+            var article4 = new Article
+            {
+                Id = Guid.Parse("44444444-aaaa-c111-a004-444444444444"),
+                CategoryId = category2.Id,
+                AuthorId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Title = "Xây Dựng Global Query Filter Cho Soft Delete Trong EF Core",
+                Slug = "xay-dung-global-query-filter-cho-soft-delete",
+                Summary = "Cách áp dụng HasQueryFilter tự động loại bỏ bản ghi đã xóa mềm khỏi các truy vấn LINQ.",
+                MarkdownContent = "# Soft Delete Pattern\n\nBảo toàn dữ liệu lịch sử với IsDeleted và IgnoreQueryFilters khi cần thiết.",
+                Status = ArticleStatus.Draft,
+                ViewCount = 45,
+                ReadingTimeMinutes = 5,
+                TagsJson = "[\"ef-core\", \"soft-delete\"]",
+                CreatedAt = baseTime.AddDays(-2)
+            };
+
+            var article5 = new Article
+            {
+                Id = Guid.Parse("55555555-aaaa-c111-a005-555555555555"),
+                CategoryId = category3.Id,
+                AuthorId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Title = "Kiến Trúc SignalR Hub Cho Lớp Học Tương Tác Thời Gian Thực",
+                Slug = "kien-truc-signalr-hub-cho-lop-hoc-tuong-tac",
+                Summary = "Đồng bộ slide, con trỏ chuột và tin nhắn nổi với độ trễ thấp bằng ASP.NET Core SignalR.",
+                MarkdownContent = "# SignalR Classroom Hub\n\nQuản lý Group theo RoomCode và phát tán sự kiện theo thời gian thực.",
+                Status = ArticleStatus.Published,
+                ViewCount = 512,
+                ReadingTimeMinutes = 10,
+                TagsJson = "[\"signalr\", \"realtime\", \"websocket\"]",
+                CreatedAt = baseTime.AddDays(-1)
+            };
+
+            var article6 = new Article
+            {
+                Id = Guid.Parse("66666666-aaaa-c111-a006-666666666666"),
+                CategoryId = category3.Id,
+                AuthorId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Title = "Lưu Trữ Tệp Đính Kèm An Toàn Với Magic Bytes Và Options Pattern",
+                Slug = "luu-tru-tep-dinh-kem-an-toan-magic-bytes",
+                Summary = "Phòng chống giả mạo định dạng và Path Traversal khi tải tệp qua multipart/form-data.",
+                MarkdownContent = "# File Upload Security\n\nKiểm tra chữ ký nhị phân và dùng Guid đặt tên tệp lưu trữ.",
+                Status = ArticleStatus.Archived,
+                ViewCount = 210,
+                ReadingTimeMinutes = 6,
+                TagsJson = "[\"security\", \"upload\", \"options\"]",
+                CreatedAt = baseTime
             };
 
             await context.Topics.AddRangeAsync(topic1, topic2);
             await context.Aspects.AddRangeAsync(aspect1, aspect2);
             await context.Categories.AddRangeAsync(category1, category2, category3);
-            await context.Articles.AddRangeAsync(article1, article2);
+            await context.Articles.AddRangeAsync(article1, article2, article3, article4, article5, article6);
         }
 
         // 3. Seed Sinh viên mẫu (Lab Buổi 1)
