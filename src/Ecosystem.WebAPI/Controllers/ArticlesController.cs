@@ -30,7 +30,7 @@ public class ArticlesController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách các bài viết tri thức có phân trang (Skip/Take), lọc đa chiều, tìm kiếm từ khóa và sắp xếp động.
+    /// Lấy danh sách các bài viết tri thức có phân trang (Skip/Take), lọc đa chiều, tìm kiếm từ khóa và sắp xếp động (kèm Header X-Pagination).
     /// </summary>
     /// <param name="query">Tham số truy vấn (PageNumber, PageSize, CategoryId, AspectId, TopicId, AuthorId, Status, SearchTerm, SortBy, IsDescending).</param>
     /// <param name="cancellationToken">Token hủy bất đồng bộ.</param>

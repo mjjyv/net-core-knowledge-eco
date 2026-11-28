@@ -19,6 +19,7 @@ x64/
 x86/
 [Bb]uild/
 bld/
+publish/
 
 # Rider / JetBrains
 .idea/

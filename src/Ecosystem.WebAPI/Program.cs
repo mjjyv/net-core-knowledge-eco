@@ -12,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Đăng ký Services & Options Pattern vào DI Container
 builder.Services.AddControllers();
 builder.Services.AddConfigurationAndOptions(builder.Configuration);
+builder.Services.AddCorsPolicy(builder.Configuration);
+builder.Services.AddProductionOptimizations();
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddApplicationServices();
 builder.Services.AddLifetimeDemonstrationServices();
@@ -24,6 +26,7 @@ var features = app.Services.GetRequiredService<IOptions<EcosystemFeaturesOptions
 
 // 2. Cấu hình HTTP Request Pipeline (Middleware Architecture)
 app.UseCustomMiddlewares();
+app.UseResponseCompression();
 
 // Đảm bảo thư mục wwwroot tồn tại và kích hoạt phục vụ tệp tĩnh (Buổi 10)
 Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot"));
@@ -32,6 +35,10 @@ app.UseStaticFiles();
 if (app.Environment.IsDevelopment() && features.EnableSwagger)
 {
     app.UseSwaggerDocumentation();
+}
+else if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
 }
 
 if (app.Environment.IsDevelopment() || features.EnableAutoMigration)
@@ -53,6 +60,9 @@ if (app.Environment.IsDevelopment() || features.EnableAutoMigration)
 
 app.UseHttpsRedirection();
 
+// CORS phải đứng trước UseAuthentication & UseAuthorization để xử lý Preflight OPTIONS (Buổi 13)
+app.UseCors(CorsOptions.PolicyName);
+
 // Thứ tự Middleware bắt buộc: Authentication phải đứng trước Authorization (Buổi 8)
 app.UseAuthentication();
 app.UseAuthorization();
@@ -65,7 +75,7 @@ app.MapGet("/health", () => Results.Ok(ApiResponse<object>.Ok(new
 {
     status = "Healthy",
     service = "TheEcosystem.WebAPI",
-    phase = "Phase 12: Global Exception Handling & Structured Logging",
+    phase = "Phase 13: Swagger Nâng Cao, CORS & Đóng Gói Docker",
     environment = app.Environment.EnvironmentName,
     serverTimeUtc = DateTime.UtcNow
 }, "Hệ thống đang hoạt động bình thường.")))

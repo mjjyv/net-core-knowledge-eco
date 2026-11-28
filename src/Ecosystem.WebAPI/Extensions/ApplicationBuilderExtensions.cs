@@ -25,7 +25,7 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// Kích hoạt giao diện tài liệu Swagger và Swagger UI.
+    /// Kích hoạt giao diện tài liệu Swagger và Swagger UI nâng cao (persist authorization, request duration, search filter).
     /// </summary>
     public static IApplicationBuilder UseSwaggerDocumentation(this IApplicationBuilder app)
     {
@@ -34,6 +34,9 @@ public static class ApplicationBuilderExtensions
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "The Ecosystem Web API v1");
             c.RoutePrefix = "swagger";
+            c.DisplayRequestDuration();
+            c.EnablePersistAuthorization();
+            c.EnableFilter();
         });
 
         return app;

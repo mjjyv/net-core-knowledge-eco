@@ -87,6 +87,14 @@ public static class ServiceCollectionExtensions
             {
                 options.IncludeXmlComments(appPath);
             }
+
+            // 3. Tải XML Comments của Domain Assembly (chứa mô tả Entities, Enums & ApiResponse)
+            var domainXml = "Ecosystem.Domain.xml";
+            var domainPath = Path.Combine(AppContext.BaseDirectory, domainXml);
+            if (File.Exists(domainPath))
+            {
+                options.IncludeXmlComments(domainPath);
+            }
         });
 
         return services;
@@ -280,9 +288,59 @@ public static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<CorsOptions>()
+            .Bind(configuration.GetSection(CorsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.Configure<FormOptions>(options =>
         {
             options.MultipartBodyLengthLimit = 20 * 1024 * 1024;
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Cấu hình chính sách CORS bảo mật theo môi trường đọc từ CorsOptions (Buổi 13).
+    /// </summary>
+    public static IServiceCollection AddCorsPolicy(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var corsOptions = configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>() ?? new CorsOptions();
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy(CorsOptions.PolicyName, policy =>
+            {
+                policy.WithOrigins(corsOptions.AllowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+
+                if (corsOptions.ExposedHeaders.Length > 0)
+                {
+                    policy.WithExposedHeaders(corsOptions.ExposedHeaders);
+                }
+
+                if (corsOptions.AllowCredentials)
+                {
+                    policy.AllowCredentials();
+                }
+            });
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Đăng ký các tối ưu hiệu năng cho môi trường Production (Response Compression).
+    /// </summary>
+    public static IServiceCollection AddProductionOptimizations(this IServiceCollection services)
+    {
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
         });
 
         return services;

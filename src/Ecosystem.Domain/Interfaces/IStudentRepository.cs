@@ -3,7 +3,7 @@ using Ecosystem.Domain.Entities;
 namespace Ecosystem.Domain.Interfaces;
 
 /// <summary>
-/// Repository chuyên biệt cho thực thể Sinh viên (Student - Lab thực hành Buổi 6 & 7).
+/// Repository chuyên biệt cho thực thể Sinh viên (Student - Lab thực hành Buổi 6 &amp; 7).
 /// </summary>
 public interface IStudentRepository : IRepository<Student>
 {
